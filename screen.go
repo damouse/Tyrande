@@ -73,7 +73,6 @@ func CaptureRect(rect image.Rectangle) (*image.NRGBA, error) {
 	}
 	defer win.DeleteObject(obj)
 
-	//Note:BitBlt contains bad error handling, we will just assume it works and if it doesn't it will panic :x
 	win.BitBlt(m_hDC, 0, 0, int32(x), int32(y), hDC, int32(rect.Min.X), int32(rect.Min.Y), win.SRCCOPY)
 
 	var slice []byte
