@@ -3,51 +3,14 @@ package main
 import (
 	"image"
 	"image/color"
-	"image/png"
-	"os"
 
 	"github.com/disintegration/gift"
-	"github.com/lazywei/go-opencv/opencv"
 	"github.com/lucasb-eyer/go-colorful"
 )
 
-// I have serious doubts about the above working.
 // Here's some more info: http://stackoverflow.com/questions/29156091/opencv-edge-border-detection-based-on-color
-
-// Pure go image filtering library: https://github.com/disintegration/gift
-
 // Another silhouette detection: http://stackoverflow.com/questions/13586686/extract-external-contour-or-silhouette-of-image-in-python
-
-// The border seems to be a burnt orange-ish color
-// It looks like its always about one pixel wide
-// Pure: (233, 88, 61)
-
 // Could be very useful: http://homepages.inf.ed.ac.uk/rbf/HIPR2/canny.htm
-
-// Save this image inside the assets folder with the given name
-func save(img image.Image, name string) {
-	f, err := os.Create("./assets/" + name)
-	checkError(err)
-	defer f.Close()
-
-	err = png.Encode(f, img)
-	checkError(err)
-}
-
-func open(path string) image.Image {
-	f, err := os.Open("./assets/" + path)
-	checkError(err)
-	defer f.Close()
-
-	img, err := png.Decode(f)
-	checkError(err)
-
-	return img
-}
-
-func convertCv(i *opencv.IplImage) image.Image {
-	return i.ToImage()
-}
 
 func iter(i image.Image, fn func(x int, y int, pixel color.Color)) {
 	b := i.Bounds()
@@ -90,12 +53,8 @@ func transformGrey(i image.Image, fn func(int, int, color.Color) color.Color) im
 //
 // Operations
 //
-func colorDistance(a color.NRGBA, c color.NRGBA) float64 {
-	c1 := colorful.Color{float64(a.R) / 255.0, float64(a.G) / 255.0, float64(a.B) / 255.0}
-	c2 := colorful.Color{float64(c.R) / 255.0, float64(c.G) / 255.0, float64(c.B) / 255.0}
-
-	// Luv seems quite good
-	return c1.DistanceCIE94(c2)
+func colorDistance(a color.Color, b color.Color) float64 {
+	return convertToColorful(a).DistanceCIE94(convertToColorful(b))
 }
 
 func photoshop(i image.Image) image.Image {
@@ -173,16 +132,18 @@ func seperateHue(i image.Image) image.Image {
 
 func accentColorDifference(i image.Image) image.Image {
 	return transformRGB(i, func(x int, y int, c color.Color) color.Color {
-		distance := colorDistance(c.(color.NRGBA), SEPERATION_TARGETCOLOR1)
+		distance := colorDistance(c, SEPERATION_TARGETCOLOR1)
 		return color.NRGBA{R: uint8(225 - 255*distance), G: uint8(225 - 255*distance), B: uint8(225 - 255*distance), A: 255}
 	})
 }
 
-func accentColorDiffereenceGreyscale(i image.Image, checkAgainst color.NRGBA) image.Image {
+func accentColorDiffereenceGreyscale(i image.Image, checkAgainst color.NRGBA, threshold float64) image.Image {
 	return transformGrey(i, func(x int, y int, c color.Color) color.Color {
-		if h := colorDistance(c.(color.NRGBA), checkAgainst); h > SEPERATION_THRESHOLD {
+		if h := colorDistance(c, checkAgainst); h > threshold {
+			// fmt.Println(h)
 			return color.Gray{0}
 		} else {
+			// fmt.Println(h)
 			return color.Gray{uint8(255 - h*255)}
 		}
 	})
@@ -197,6 +158,10 @@ func accentColorDiffereenceGreyscaleAggregate(i image.Image) image.Image {
 		d2 := colorDistance(rgb, SEPERATION_TARGETCOLOR2)
 		d3 := colorDistance(rgb, SEPERATION_TARGETCOLOR3)
 
-		return color.Gray{uint8(225 - (d1 * d2 * d3 * 255))}
+		if h := (d1/3 + d2/3 + d3/3); h > SEPERATION_THRESHOLD {
+			return color.Gray{0}
+		} else {
+			return color.Gray{uint8(255 - h*255)}
+		}
 	})
 }
