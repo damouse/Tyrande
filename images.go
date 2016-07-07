@@ -95,19 +95,34 @@ func colorDistance(a color.NRGBA, c color.NRGBA) float64 {
 	c2 := colorful.Color{float64(c.R) / 255.0, float64(c.G) / 255.0, float64(c.B) / 255.0}
 
 	// Luv seems quite good
-	return c1.DistanceCIE76(c2)
+	return c1.DistanceCIE94(c2)
 }
 
 func photoshop(i image.Image) image.Image {
 	g := gift.New(
-		gift.UnsharpMask(1.0, 10.0, 2.0),
-		gift.Contrast(50),
-		gift.Saturation(10),
+		gift.UnsharpMask(12.0, 30.0, 20.0),
+		gift.Contrast(30),
+		// gift.Hue(45),
+		// gift.Gamma(0.1),
+		// gift.Saturation(10),
 	)
 
 	// 2. Create a new image of the corresponding size.
 	// dst is a new target image, src is the original image
 	dst := image.NewNRGBA(g.Bounds(i.Bounds()))
+
+	g.Draw(dst, i)
+	return dst
+}
+
+func localmax(i image.Image) image.Image {
+	g := gift.New(
+		gift.Maximum(5, true),
+	)
+
+	// 2. Create a new image of the corresponding size.
+	// dst is a new target image, src is the original image
+	dst := image.NewGray(g.Bounds(i.Bounds()))
 
 	g.Draw(dst, i)
 	return dst
@@ -123,15 +138,15 @@ func sobel(i image.Image) image.Image {
 		// 	},
 		// 	false, false, false, 0.0,
 		// ),
-		gift.Convolution( // edge detection
-			[]float32{
-				-1, -1, -1,
-				-1, 8, -1,
-				-1, -1, -1,
-			},
-			false, false, false, 0.0,
-		),
-		// gift.Sobel(),
+		// gift.Convolution( // edge detection
+		// 	[]float32{
+		// 		-1, -1, -1,
+		// 		-1, 8, -1,
+		// 		-1, -1, -1,
+		// 	},
+		// 	false, false, false, 0.0,
+		// ),
+		gift.Sobel(),
 	)
 
 	// 2. Create a new image of the corresponding size.
@@ -151,7 +166,7 @@ func seperateHue(i image.Image) image.Image {
 		c := colorful.Color{float64(pix.R) / 255.0, float64(pix.G) / 255.0, float64(pix.B) / 255.0}
 
 		_, h, _ := c.Hsv()
-		h = 1 - h
+		// h = h
 		return color.NRGBA{R: uint8(255 * h), G: uint8(255 * h), B: uint8(255 * h), A: 255}
 	})
 }
@@ -165,17 +180,11 @@ func accentColorDifference(i image.Image) image.Image {
 
 func accentColorDiffereenceGreyscale(i image.Image, checkAgainst color.NRGBA) image.Image {
 	return transformGrey(i, func(x int, y int, c color.Color) color.Color {
-		h := colorDistance(c.(color.NRGBA), checkAgainst)
-
-		if h > SEPERATION_THRESHOLD {
+		if h := colorDistance(c.(color.NRGBA), checkAgainst); h > SEPERATION_THRESHOLD {
 			return color.Gray{0}
 		} else {
-			return color.Gray{uint8(225 - h*255)}
+			return color.Gray{uint8(255 - h*255)}
 		}
-
-		// c := colorful.Color{float64(pix.R) / 255.0, float64(pix.G) / 255.0, float64(pix.B) / 255.0}
-		// _, h, _ := c.Hsv()
-		// n.Set(x, y, color.Gray{uint8(h * 255)})
 	})
 }
 
