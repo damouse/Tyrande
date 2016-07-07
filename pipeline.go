@@ -2,30 +2,34 @@ package main
 
 import (
 	"fmt"
+	"image"
 	"time"
 )
 
-type Pipeline struct {
-	results []Image
+var (
+	EDGE_THRESHOLD int = 100
+)
 
-	edgeThreshold int
+type Pipeline struct {
+	results []image.Image
 }
 
 func NewPipeline() *Pipeline {
-	return &Pipeline{
-		results:       []Image{},
-		edgeThreshold: 100,
-	}
+	return &Pipeline{[]image.Image{}}
 }
 
-func (p *Pipeline) run(img Image) {
+func (p *Pipeline) run(img image.Image) {
 	start := time.Now()
 
-	p.results = []Image{}
+	p.results = []image.Image{}
 	i := img
 	p.results = append(p.results, i)
 
-	// Initial image touchup
+	// Basic photo balancing and editing
+	i = photoshop(i)
+	p.results = append(p.results, i)
+
+	// Pick out the right color
 	i = accentColorDifference(i)
 	p.results = append(p.results, i)
 
@@ -34,7 +38,7 @@ func (p *Pipeline) run(img Image) {
 	// p.results = append(p.results, i)
 
 	// Edge
-	i = edgeCV(i, p.edgeThreshold)
+	i = edgeCV(i, EDGE_THRESHOLD)
 	p.results = append(p.results, i)
 
 	fmt.Printf("Pipeline bench: %s", time.Since(start))
@@ -43,11 +47,11 @@ func (p *Pipeline) run(img Image) {
 // Saves all the files with unique names for inspection
 func (p *Pipeline) save() {
 	for num, i := range p.results {
-		i.save(fmt.Sprintf("%d.png", num))
+		save(i, fmt.Sprintf("%d.png", num))
 	}
 }
 
-func (p *Pipeline) get(i int) *Image {
+func (p *Pipeline) get(i int) *image.Image {
 	if i >= len(p.results) {
 		return nil
 	}

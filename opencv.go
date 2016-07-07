@@ -2,11 +2,15 @@ package main
 
 import (
 	"image"
+	"image/png"
+	"os"
+	"path"
+	"runtime"
 
 	"github.com/lazywei/go-opencv/opencv"
 )
 
-func edgeCV(i Image, threshold int) Image {
+func edgeCV(i image.Image, threshold int) image.Image {
 	img := opencv.FromImage(i)
 
 	w := img.Width()
@@ -29,6 +33,23 @@ func edgeCV(i Image, threshold int) Image {
 	opencv.Zero(cedge)
 	opencv.Copy(img, cedge, edge)
 
-	ret := cedge.ToImage()
-	return Image{ret.(*image.NRGBA)}
+	return cedge.ToImage()
+}
+
+func sand2() {
+	_, currentfile, _, _ := runtime.Caller(0)
+	filename := path.Join(path.Dir(currentfile), "./assets/hue.png")
+	img := opencv.LoadImage(filename)
+	defer img.Release()
+
+	// Create the output image
+	edge := opencv.CreateImage(img.Width(), img.Height(), opencv.IPL_DEPTH_8U, 1)
+
+	opencv.Canny(img, edge, 200, 400, 6)
+
+	ret := edge.ToImage()
+	f, err := os.Create("./assets/sand.png")
+	defer f.Close()
+	err = png.Encode(f, ret)
+	checkError(err)
 }
