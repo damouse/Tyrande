@@ -1,12 +1,55 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
 	"math"
 	"os"
+
+	"github.com/lazywei/go-opencv/opencv"
 )
+
+type Operation struct {
+	fn func(Image, map[string]interface{}) Image
+	// settings map[string]interface{}
+}
+
+type Pipeline struct {
+	// ops     []Operation
+	results []Image
+
+	edgeThreshold int
+}
+
+func NewPipeline() *Pipeline {
+	return &Pipeline{
+		results:       []Image{},
+		edgeThreshold: 50,
+	}
+}
+
+func (p *Pipeline) run(img Image) {
+	p.results = []Image{}
+
+	i := img
+	p.results = append(p.results, i)
+
+	// Edge
+	i = edgeCV(i, p.edgeThreshold)
+	p.results = append(p.results, i)
+
+	fmt.Println("Pipeline finished", len(p.results))
+}
+
+func (p *Pipeline) get(i int) *Image {
+	if i >= len(p.results) {
+		return nil
+	}
+
+	return &p.results[i]
+}
 
 type Image struct {
 	*image.NRGBA
@@ -30,6 +73,11 @@ func open(path string) Image {
 	img, err := png.Decode(f)
 	checkError(err)
 
+	return Image{img.(*image.NRGBA)}
+}
+
+func convertCv(i *opencv.IplImage) Image {
+	img := i.ToImage()
 	return Image{img.(*image.NRGBA)}
 }
 

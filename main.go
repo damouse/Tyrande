@@ -48,13 +48,13 @@ func hsvConversion(a color.NRGBA) color.NRGBA {
 
 // Remove everything in the image except outlines
 func stripImage() {
-	i := open("sample.png")
+	i := open("sample-shop.png")
 
 	fmt.Println("Bounds: ", i.Bounds())
 	n := Image{image.NewNRGBA(i.Bounds())}
 
 	// targetColor := color.NRGBA{224, 84, 64, 255} // works for second to left
-	targetColor := color.NRGBA{166, 64, 71, 255} // works for leftmost
+	// targetColor := color.NRGBA{166, 64, 71, 255} // works for leftmost
 
 	// Very rough iterator for the images
 	b := i.Bounds()
@@ -62,11 +62,10 @@ func stripImage() {
 		for x := b.Min.X; x < b.Max.X; x++ {
 			pix := i.NRGBAAt(x, y)
 
-			// a very good distance measurement
-			distance := colorfulDistance(pix, targetColor)
-			newColor := color.NRGBA{R: uint8(225 - 255*distance), G: uint8(225 - 255*distance), B: uint8(225 - 255*distance), A: 255}
+			// distance := colorfulDistance(pix, targetColor)
+			// newColor := color.NRGBA{R: uint8(225 - 255*distance), G: uint8(225 - 255*distance), B: uint8(225 - 255*distance), A: 255}
 
-			//newColor := hsvConversion(pix)
+			newColor := hsvConversion(pix)
 			// newColor := color.NRGBA{R: uint8(225 - 255*distance), G: uint8(225 - 255*distance), B: uint8(225 - 255*distance), A: 255}
 
 			n.SetNRGBA(x, y, newColor)
@@ -80,6 +79,7 @@ func edgy() {
 	_, currentfile, _, _ := runtime.Caller(0)
 	filename := path.Join(path.Dir(currentfile), "./assets/out.png")
 	image := opencv.LoadImage(filename)
+	// fmt.Println(img.Channels())
 	defer image.Release()
 
 	w := image.Width()
@@ -103,15 +103,9 @@ func edgy() {
 	win.CreateTrackbar("Thresh", 1, 100, func(pos int, param ...interface{}) {
 		edge_thresh := pos
 
-		opencv.Smooth(gray, edge, opencv.CV_BLUR, 3, 3, 0, 0)
 		opencv.Not(gray, edge)
-
-		// Run the edge detector on grayscale
-		opencv.Canny(gray, edge, float64(edge_thresh), float64(edge_thresh*3), 3)
-
+		opencv.Canny(gray, edge, float64(edge_thresh), float64(edge_thresh*5), 3)
 		opencv.Zero(cedge)
-
-		// copy edge points
 		opencv.Copy(image, cedge, edge)
 
 		win.ShowImage(cedge)
@@ -131,5 +125,10 @@ func edgy() {
 
 func main() {
 	// stripImage()
-	edgy()
+	// edgy()
+
+	w := NewWindow()
+	w.build(NewPipeline())
+	w.run(open("sample.png"))
+	w.wait()
 }
