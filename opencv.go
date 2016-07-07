@@ -10,7 +10,7 @@ import (
 	"github.com/lazywei/go-opencv/opencv"
 )
 
-func edgeCV(i image.Image, threshold int) image.Image {
+func edgeCV(i image.Image) image.Image {
 	img := opencv.FromImage(i)
 
 	w := img.Width()
@@ -29,7 +29,7 @@ func edgeCV(i image.Image, threshold int) image.Image {
 	opencv.CvtColor(img, gray, opencv.CV_BGR2GRAY)
 
 	opencv.Not(gray, edge)
-	opencv.Canny(gray, edge, float64(threshold), float64(threshold*5), 3)
+	opencv.Canny(gray, edge, EDGE_THRESHOLD, EDGE_THRESHOLD*5, 3)
 	opencv.Zero(cedge)
 	opencv.Copy(img, cedge, edge)
 
