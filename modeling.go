@@ -49,6 +49,17 @@ func scanChunk(chunk []Pix, color color.Color, thresh float64) (ret []Pix) {
 	return
 }
 
+// Check for a match in one of the colors. Return true if its within thresh of a color in targets
+func similarColor(c color.Color, targets []color.Color, thresh float64) bool {
+	for _, t := range targets {
+		if distance := colorDistance(c, t); distance < thresh {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Identifies lines in a picture that have a color within thresh distance of a color in col
 func huntLines(img image.Image, colors []color.Color, thresh float64, width int) (ret []Line) {
 	// We already have information about visited pixels from iter coordinates
@@ -62,30 +73,22 @@ func huntLines(img image.Image, colors []color.Color, thresh float64, width int)
 			return
 		}
 
+		// -- Hunting
 		// Measure color distance between this pixel and target colors
-		var reference *color.Color
-
-		for _, t := range colors {
-			if distance := colorDistance(c, t); distance < thresh {
-				reference = &c
-				break
-			}
-		}
-
-		// If no close match found continue
-		if reference == nil {
+		if !similarColor(c, colors, thresh) {
 			return
 		}
 
-		//
-		// -- Hunting
 		// Get adjacent pixels
 		neighbors := neighborPixels(x, y, width, img)
 
-		//
-		// -- Chunking
-		matches := scanChunk(neighbors, *reference, 0.1)
+		// Determine if this is the start of a chunk or a line. Reject if chunk, Trace if line
+		matches := scanChunk(neighbors, c, 0.1)
 
+		// NOTE: only mark pixels in Chunking or Tracing, not when visiting. Otherwise visiting the edges
+		// of a line will reject the line... I think?
+
+		// -- Chunking
 		// If the chunk all has the same color begin rejection: chunk and reject whole area
 		if len(matches) == (width*2 + 1) {
 			// TODO: Grow the chunk, then reject it
@@ -94,7 +97,6 @@ func huntLines(img image.Image, colors []color.Color, thresh float64, width int)
 
 		// Note: a line that connects to a chunk should not be rejected
 
-		//
 		// -- Tracing
 		// Create a line object
 		// Add matching pixels
@@ -104,7 +106,6 @@ func huntLines(img image.Image, colors []color.Color, thresh float64, width int)
 		// If pixel matches and has not been visited repeat chunking
 		// If no more matches found add group to return and resume hunt
 
-		//
 		// -- Modeling
 		// Merge close lines
 		// Determine a center
