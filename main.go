@@ -20,24 +20,25 @@ func runpipe() {
 }
 
 func adjustments() {
+
 	p := open("sample.png")
 	// d := imaging.AdjustContrast(p, 50)
 	// d = imaging.Sharpen(d, 50)
 
 	// 1. Create a new GIFT filter list and add some filters:
 	g := gift.New(
-		// gift.UnsharpMask(1.0, 10.0, 10.0),
-		// gift.Contrast(50),
-		// gift.Saturation(50),
+		gift.UnsharpMask(1.0, 10.0, 10.0),
+		gift.Contrast(50),
+		gift.Saturation(50),
 		//gift.ColorBalance(-50, 50, 50),
-		gift.Convolution( // emboss
-			[]float32{
-				-1, -1, 0,
-				-1, 1, 1,
-				0, 1, 1,
-			},
-			false, false, false, 0.0,
-		),
+		// gift.Convolution( // emboss
+		// 	[]float32{
+		// 		-1, -1, 0,
+		// 		-1, 1, 1,
+		// 		0, 1, 1,
+		// 	},
+		// 	false, false, false, 0.0,
+		// ),
 		// gift.Convolution( // edge detection
 		// 	[]float32{
 		// 		-1, -1, -1,
@@ -63,7 +64,8 @@ func adjustments() {
 }
 
 func sandbox() {
-	p := open("adjusted.png")
+	// p := open("adjusted.png")
+	p := open("sample-shop.png")
 
 	b := p.Bounds()
 	n := image.NewGray(b)
@@ -73,7 +75,11 @@ func sandbox() {
 			pix := p.NRGBAAt(x, y)
 
 			h := colorDistance(pix, targetColor1)
-			n.Set(x, y, color.Gray{uint8(225 - h*255)})
+			if h > 0.60 {
+				n.Set(x, y, color.Gray{0})
+			} else {
+				n.Set(x, y, color.Gray{uint8(225 - h*255)})
+			}
 
 			// c := colorful.Color{float64(pix.R) / 255.0, float64(pix.G) / 255.0, float64(pix.B) / 255.0}
 			// _, h, _ := c.Hsv()
@@ -106,7 +112,7 @@ func sand2() {
 }
 
 func main() {
-	adjustments()
+	// adjustments()
 	sandbox()
 	// sand2()
 

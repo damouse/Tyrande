@@ -21,8 +21,11 @@ import (
 // It looks like its always about one pixel wide
 // Pure: (233, 88, 61)
 
+// Could be very useful: http://homepages.inf.ed.ac.uk/rbf/HIPR2/canny.htm
+
 var targetColor1 = color.NRGBA{224, 84, 64, 255} // works for second to left
 var targetColor2 = color.NRGBA{166, 64, 71, 255} // works for leftmost
+var targetColor3 = color.NRGBA{255, 0, 0, 255}
 
 type Image struct {
 	*image.NRGBA
