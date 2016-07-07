@@ -1,134 +1,116 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"image/color"
+	"image/png"
 	"os"
 	"path"
 	"runtime"
 
 	"github.com/lazywei/go-opencv/opencv"
-	"github.com/lucasb-eyer/go-colorful"
+
+	"github.com/disintegration/gift"
 )
 
-// The border seems to be a burnt orange-ish color
-// It looks like its always about one pixel wide
-// Pure: (233, 88, 61)
-
-func colorfulDistance(a color.NRGBA, c color.NRGBA) float64 {
-	c1 := colorful.Color{float64(a.R) / 255.0, float64(a.G) / 255.0, float64(a.B) / 255.0}
-	c2 := colorful.Color{float64(c.R) / 255.0, float64(c.G) / 255.0, float64(c.B) / 255.0}
-
-	// Luv seems quite good
-
-	return c1.DistanceCIE76(c2)
-
-	// c := colorful.Color{0.313725, 0.478431, 0.721569}
-	// c, err := colorful.Hex("#517AB8")
-	// if err != nil{
-	//     log.Fatal(err)
-	// }
-	// c = colorful.Hsv(216.0, 0.56, 0.722)
-	// c = colorful.Xyz(0.189165, 0.190837, 0.480248)
-	// c = colorful.Xyy(0.219895, 0.221839, 0.190837)
-	// c = colorful.Lab(0.507850, 0.040585,-0.370945)
-	// c = colorful.Luv(0.507849,-0.194172,-0.567924)
-	// c = colorful.Hcl(276.2440, 0.373160, 0.507849)
-	// fmt.Printf("RGB values: %v, %v, %v", c.R, c.G, c.B)
+func runpipe() {
+	p := NewPipeline()
+	p.run(open("sample.png"))
+	p.save()
 }
 
-// Does a pretty good job making the outlines stand out
-func hsvConversion(a color.NRGBA) color.NRGBA {
-	c := colorful.Color{float64(a.R) / 255.0, float64(a.G) / 255.0, float64(a.B) / 255.0}
-	r, g, b := c.Luv()
+func adjustments() {
+	p := open("sample.png")
+	// d := imaging.AdjustContrast(p, 50)
+	// d = imaging.Sharpen(d, 50)
 
-	return color.NRGBA{R: uint8(225 - 255*r), G: uint8(225 - 255*g), B: uint8(225 - 255*b), A: 255}
+	// 1. Create a new GIFT filter list and add some filters:
+	g := gift.New(
+		// gift.UnsharpMask(1.0, 10.0, 10.0),
+		// gift.Contrast(50),
+		// gift.Saturation(50),
+		//gift.ColorBalance(-50, 50, 50),
+		gift.Convolution( // emboss
+			[]float32{
+				-1, -1, 0,
+				-1, 1, 1,
+				0, 1, 1,
+			},
+			false, false, false, 0.0,
+		),
+		// gift.Convolution( // edge detection
+		// 	[]float32{
+		// 		-1, -1, -1,
+		// 		-1, 8, -1,
+		// 		-1, -1, -1,
+		// 	},
+		// 	false, false, false, 0.0,
+		// ),
+		// gift.Sobel(),
+	)
+
+	// 2. Create a new image of the corresponding size.
+	// dst is a new target image, src is the original image
+	dst := image.NewRGBA(g.Bounds(p.Bounds()))
+
+	// 3. Use Draw func to apply the filters to src and store the result in dst:
+	g.Draw(dst, p)
+
+	f, err := os.Create("./assets/adjusted.png")
+	defer f.Close()
+	err = png.Encode(f, dst)
+	checkError(err)
 }
 
-// Remove everything in the image except outlines
-func stripImage() {
-	i := open("sample-shop.png")
+func sandbox() {
+	p := open("adjusted.png")
 
-	fmt.Println("Bounds: ", i.Bounds())
-	n := Image{image.NewNRGBA(i.Bounds())}
+	b := p.Bounds()
+	n := image.NewGray(b)
 
-	// targetColor := color.NRGBA{224, 84, 64, 255} // works for second to left
-	// targetColor := color.NRGBA{166, 64, 71, 255} // works for leftmost
-
-	// Very rough iterator for the images
-	b := i.Bounds()
 	for y := b.Min.Y; y < b.Max.Y; y++ {
 		for x := b.Min.X; x < b.Max.X; x++ {
-			pix := i.NRGBAAt(x, y)
+			pix := p.NRGBAAt(x, y)
 
-			// distance := colorfulDistance(pix, targetColor)
-			// newColor := color.NRGBA{R: uint8(225 - 255*distance), G: uint8(225 - 255*distance), B: uint8(225 - 255*distance), A: 255}
+			h := colorDistance(pix, targetColor1)
+			n.Set(x, y, color.Gray{uint8(225 - h*255)})
 
-			newColor := hsvConversion(pix)
-			// newColor := color.NRGBA{R: uint8(225 - 255*distance), G: uint8(225 - 255*distance), B: uint8(225 - 255*distance), A: 255}
-
-			n.SetNRGBA(x, y, newColor)
+			// c := colorful.Color{float64(pix.R) / 255.0, float64(pix.G) / 255.0, float64(pix.B) / 255.0}
+			// _, h, _ := c.Hsv()
+			// n.Set(x, y, color.Gray{uint8(h * 255)})
 		}
 	}
 
-	n.save("out.png")
+	f, err := os.Create("./assets/hue.png")
+	defer f.Close()
+	err = png.Encode(f, n)
+	checkError(err)
 }
 
-func edgy() {
+func sand2() {
 	_, currentfile, _, _ := runtime.Caller(0)
-	filename := path.Join(path.Dir(currentfile), "./assets/out.png")
-	image := opencv.LoadImage(filename)
-	// fmt.Println(img.Channels())
-	defer image.Release()
-
-	w := image.Width()
-	h := image.Height()
+	filename := path.Join(path.Dir(currentfile), "./assets/hue.png")
+	img := opencv.LoadImage(filename)
+	defer img.Release()
 
 	// Create the output image
-	cedge := opencv.CreateImage(w, h, opencv.IPL_DEPTH_8U, 3)
-	defer cedge.Release()
+	edge := opencv.CreateImage(img.Width(), img.Height(), opencv.IPL_DEPTH_8U, 1)
 
-	// Convert to grayscale
-	gray := opencv.CreateImage(w, h, opencv.IPL_DEPTH_8U, 1)
-	edge := opencv.CreateImage(w, h, opencv.IPL_DEPTH_8U, 1)
-	defer gray.Release()
-	defer edge.Release()
+	opencv.Canny(img, edge, 200, 400, 6)
 
-	opencv.CvtColor(image, gray, opencv.CV_BGR2GRAY)
-
-	win := opencv.NewWindow("Edge")
-	defer win.Destroy()
-
-	win.CreateTrackbar("Thresh", 1, 100, func(pos int, param ...interface{}) {
-		edge_thresh := pos
-
-		opencv.Not(gray, edge)
-		opencv.Canny(gray, edge, float64(edge_thresh), float64(edge_thresh*5), 3)
-		opencv.Zero(cedge)
-		opencv.Copy(image, cedge, edge)
-
-		win.ShowImage(cedge)
-	})
-
-	win.ShowImage(image)
-
-	for {
-		key := opencv.WaitKey(20)
-		if key == 27 {
-			os.Exit(0)
-		}
-	}
-
-	os.Exit(0)
+	ret := edge.ToImage()
+	f, err := os.Create("./assets/sand.png")
+	defer f.Close()
+	err = png.Encode(f, ret)
+	checkError(err)
 }
 
 func main() {
-	// stripImage()
-	// edgy()
+	adjustments()
+	sandbox()
+	// sand2()
 
-	w := NewWindow()
-	w.build(NewPipeline())
-	w.run(open("sample.png"))
-	w.wait()
+	// stripImage()
+	// edgy("hue.png")
+	// runpipe()
 }

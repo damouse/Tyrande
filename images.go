@@ -1,55 +1,28 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"image/png"
-	"math"
 	"os"
 
 	"github.com/lazywei/go-opencv/opencv"
+	"github.com/lucasb-eyer/go-colorful"
 )
 
-type Operation struct {
-	fn func(Image, map[string]interface{}) Image
-	// settings map[string]interface{}
-}
+// I have serious doubts about the above working.
+// Here's some more info: http://stackoverflow.com/questions/29156091/opencv-edge-border-detection-based-on-color
 
-type Pipeline struct {
-	// ops     []Operation
-	results []Image
+// Pure go image filtering library: https://github.com/disintegration/gift
 
-	edgeThreshold int
-}
+// Another silhouette detection: http://stackoverflow.com/questions/13586686/extract-external-contour-or-silhouette-of-image-in-python
 
-func NewPipeline() *Pipeline {
-	return &Pipeline{
-		results:       []Image{},
-		edgeThreshold: 50,
-	}
-}
+// The border seems to be a burnt orange-ish color
+// It looks like its always about one pixel wide
+// Pure: (233, 88, 61)
 
-func (p *Pipeline) run(img Image) {
-	p.results = []Image{}
-
-	i := img
-	p.results = append(p.results, i)
-
-	// Edge
-	i = edgeCV(i, p.edgeThreshold)
-	p.results = append(p.results, i)
-
-	fmt.Println("Pipeline finished", len(p.results))
-}
-
-func (p *Pipeline) get(i int) *Image {
-	if i >= len(p.results) {
-		return nil
-	}
-
-	return &p.results[i]
-}
+var targetColor1 = color.NRGBA{224, 84, 64, 255} // works for second to left
+var targetColor2 = color.NRGBA{166, 64, 71, 255} // works for leftmost
 
 type Image struct {
 	*image.NRGBA
@@ -81,22 +54,66 @@ func convertCv(i *opencv.IplImage) Image {
 	return Image{img.(*image.NRGBA)}
 }
 
-// Color manipulation. Returns the "distance" between two colors
-func colorDistance(a color.NRGBA, b color.NRGBA) float64 {
-	// r := math.Abs(float64(a.R - b.R))
-	// g := math.Abs(float64(a.G - b.G))
-	// e := math.Abs(float64(a.B - b.B))
+func (i *Image) iter(fn func(x int, y int, pixel color.NRGBA)) {
+	b := i.Bounds()
 
-	d := math.Sqrt(float64((a.R - b.R) ^ 2 + (a.G - b.G) ^ 2 + (a.B - b.B) ^ 2))
-
-	return d / math.Sqrt((255)^2+(255)^2+(255)^2)
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			fn(x, y, i.NRGBAAt(x, y))
+		}
+	}
 }
 
-// I have serious doubts about the above working.
-// Here's some more info: http://stackoverflow.com/questions/29156091/opencv-edge-border-detection-based-on-color
+func (i *Image) transform(fn func(int, int, color.NRGBA) color.NRGBA) Image {
+	b := i.Bounds()
+	n := Image{image.NewNRGBA(b)}
 
-// Pure go image filtering library: https://github.com/disintegration/gift
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			n.SetNRGBA(x, y, fn(x, y, i.NRGBAAt(x, y)))
+		}
+	}
 
-// Another silhouette detection: http://stackoverflow.com/questions/13586686/extract-external-contour-or-silhouette-of-image-in-python
+	return n
+}
 
-// Or just grab opencv: https://github.com/lazywei/go-opencv#disclaimer
+//
+// Operations
+//
+func colorDistance(a color.NRGBA, c color.NRGBA) float64 {
+	c1 := colorful.Color{float64(a.R) / 255.0, float64(a.G) / 255.0, float64(a.B) / 255.0}
+	c2 := colorful.Color{float64(c.R) / 255.0, float64(c.G) / 255.0, float64(c.B) / 255.0}
+
+	// Luv seems quite good
+	return c1.DistanceCIE76(c2)
+}
+
+func seperateHue(i Image) Image {
+	// Saturation looks very useful
+	// Hue... does not
+
+	return i.transform(func(x int, y int, pix color.NRGBA) color.NRGBA {
+		c := colorful.Color{float64(pix.R) / 255.0, float64(pix.G) / 255.0, float64(pix.B) / 255.0}
+
+		h, _, _ := c.Hsv()
+		h = h / 360
+		return color.NRGBA{R: uint8(255 * h), G: uint8(255 * h), B: uint8(255 * h), A: 255}
+	})
+}
+
+func accentColorDifference(i Image) Image {
+	n := Image{image.NewNRGBA(i.Bounds())}
+	b := i.Bounds()
+
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+
+			pix := i.NRGBAAt(x, y)
+			distance := colorDistance(pix, targetColor1)
+			newColor := color.NRGBA{R: uint8(225 - 255*distance), G: uint8(225 - 255*distance), B: uint8(225 - 255*distance), A: 255}
+			n.SetNRGBA(x, y, newColor)
+		}
+	}
+
+	return n
+}
