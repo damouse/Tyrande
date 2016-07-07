@@ -75,7 +75,8 @@ func sandbox() {
 			pix := p.NRGBAAt(x, y)
 
 			h := colorDistance(pix, targetColor1)
-			if h > 0.60 {
+
+			if h > 0.40 {
 				n.Set(x, y, color.Gray{0})
 			} else {
 				n.Set(x, y, color.Gray{uint8(225 - h*255)})
