@@ -59,63 +59,17 @@ func similarColor(c color.Color, targets []color.Color, thresh float64) bool {
 	return false
 }
 
-// Reject the given pixels and return adjacent chunks. Ignore adjacent chunks that
-// have already been rejected.
-// Return adjacent chunks
-func reject(chunk []Pix, mat *TrackingMat, width int, img image.Image, thresh float64, c color.Color) {
-	// Reject these pixels
-	for _, p := range chunk {
-		mat.set(p.x, p.y, 1)
-	}
-
-	// Iterate over adjacent pixels
-	for _, p := range chunk {
-		neighbors := neighborPixels(p.x, p.y, width, img)
-		for _, n := range neighbors {
-
-			// ignore already visited pixels
-			if mat.get(n.x, n.y) != 0 {
-				continue
-			}
-
-			// apply recursively to neighbors
-			matches := scanChunk(neighbors, c, 0.1)
-
-			if len(matches) == (width*2 + 1) {
-				reject(neighbors, mat, width, img, thresh, c)
-			}
-		}
-	}
-
-	// queue := make([]int, 0)
-	// // Push
-	// queue := append(queue, 1)
-	// // Top (just get next element, don't remove it)
-	// x = queue[0]
-	// // Discard top element
-	// queue = queue[1:]
-	// // Is empty ?
-	// if len(queue) == 0 {
-	// 	fmt.Println("Queue is empty !")
-	// }
-}
-
 // Identifies lines in a picture that have a color within thresh distance of a color in col
 func huntLines(img image.Image, colors []color.Color, thresh float64, width int) (image.Image, []Line) {
-	// We already have information about visited pixels from iter coordinates
-	// This stops the algo from re-processing a rejected shape for every pixel
 	chunks := newTrackingMat(img.Bounds().Max.X+2, img.Bounds().Max.Y+1)
 	lines := newTrackingMat(img.Bounds().Max.X+2, img.Bounds().Max.Y+1)
 
-	// ret := image.NewNRGBA(img.Bounds())
-
 	iter(img, func(x, y int, c color.Color) {
 		// If this is marked as chunk do not process
-		// if chunks.get(x, y) != 0 {
-		// 	return
-		// }
+		if chunks.get(x, y) != 0 {
+			return
+		}
 
-		// -- Hunting
 		// Measure color distance between this pixel and target colors
 		if !similarColor(c, colors, thresh) {
 			return
@@ -127,18 +81,11 @@ func huntLines(img image.Image, colors []color.Color, thresh float64, width int)
 		// Determine if this is the start of a chunk or a line. Reject if chunk, Trace if line
 		matches := scanChunk(neighbors, c, 0.1)
 
-		// h := float64(len(matches)) / 9.0
-		// ret.Set(x, y, colorful.Color{float64(len(matches)) / 9.0, float64(len(matches)) / 9.0, float64(len(matches)) / 9.0})
-		// fmt.Printf("Mathches: %d / %d\n", len(matches), len(neighbors))
-
 		// -- Chunking
-		// If the chunk all has the same color begin rejection: chunk and reject whole area
 		if len(matches) == len(neighbors) {
 			for _, p := range neighbors {
 				chunks.set(p.x, p.y, 1)
 			}
-
-			return
 		} else {
 			lines.set(x, y, 1)
 		}

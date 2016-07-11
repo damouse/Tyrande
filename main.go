@@ -69,7 +69,7 @@ func testhunter() {
 	// w := NewWindow()
 	// w.show(p)
 
-	i, _ := huntLines(p, allColors, 0.6, 2)
+	i, _ := huntLines(p, allColors, 0.6, 1)
 
 	// w.show(i)
 	// w.wait()
