@@ -38,7 +38,7 @@ func neighborPixels(tX, tY, distance int, i image.Image) (ret []Pix) {
 	return
 }
 
-// Return matching pixels from chunk
+// Return matching pixels from chunk that are within thresh of the given color
 func scanChunk(chunk []Pix, color color.Color, thresh float64) (ret []Pix) {
 	for _, p := range chunk {
 		if d := colorDistance(p, color); d < thresh {
@@ -61,13 +61,18 @@ func similarColor(c color.Color, targets []color.Color, thresh float64) bool {
 }
 
 // Identifies lines in a picture that have a color within thresh distance of a color in col
-func huntLines(img image.Image, colors []color.Color, thresh float64, width int) (ret []Line) {
+func huntLines(img image.Image, colors []color.Color, thresh float64, width int) (image.Image, []Line) {
 	// We already have information about visited pixels from iter coordinates
 	// This stops the algo from re-processing a rejected shape for every pixel
-	visited := newTrackingMat(img.Bounds().Max.X+1, img.Bounds().Max.Y+1)
+	visited := newTrackingMat(img.Bounds().Max.X+2, img.Bounds().Max.Y+1)
+	// fmt.Printf("Bounds: %v, (%v, %v), len: %v\n", img.Bounds(), visited.w, visited.h, len(visited.arr))
+
+	ret := image.NewGray(img.Bounds())
 
 	// For each pixel
 	iter(img, func(x, y int, c color.Color) {
+		ret.Set(x, y, color.Black)
+
 		// If this pixel has been visited do not process it
 		if visited.get(x, y) != 0 {
 			return
@@ -92,6 +97,10 @@ func huntLines(img image.Image, colors []color.Color, thresh float64, width int)
 		// If the chunk all has the same color begin rejection: chunk and reject whole area
 		if len(matches) == (width*2 + 1) {
 			// TODO: Grow the chunk, then reject it
+			// fmt.Println("Have a chunk?")
+
+			ret.Set(x, y, color.White)
+
 			return
 		}
 
@@ -112,7 +121,7 @@ func huntLines(img image.Image, colors []color.Color, thresh float64, width int)
 		// Note: this isnt going into this function, put it somewhere else
 	})
 
-	return
+	return ret, nil
 }
 
 // Tracks the results of a GroupLines operation
@@ -130,9 +139,9 @@ func newTrackingMat(width, height int) *TrackingMat {
 }
 
 func (m *TrackingMat) get(x, y int) uint8 {
-	return m.arr[x*m.w+y]
+	return m.arr[y*m.w+x]
 }
 
 func (m *TrackingMat) set(x, y int, v uint8) {
-	m.arr[x*m.w+y] = v
+	m.arr[y*m.w+x] = v
 }
