@@ -54,7 +54,7 @@ func transformGrey(i image.Image, fn func(int, int, color.Color) color.Color) im
 // Operations
 //
 func colorDistance(a color.Color, b color.Color) float64 {
-	return convertToColorful(a).DistanceCIE94(convertToColorful(b))
+	return convertToColorful(a).DistanceCIE76(convertToColorful(b))
 }
 
 func photoshop(i image.Image) image.Image {

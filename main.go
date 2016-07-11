@@ -64,10 +64,15 @@ func testshop() {
 func testhunter() {
 	target := color.NRGBA{219, 18, 29, 255}
 	allColors := []color.Color{target}
+	p := open("lowsett.png")
 
-	p := open("smallest.png")
+	// w := NewWindow()
+	// w.show(p)
 
-	i, _ := huntLines(p, allColors, 0.5, 2)
+	i, _ := huntLines(p, allColors, 0.6, 2)
+
+	// w.show(i)
+	// w.wait()
 
 	save(i, "huntress.png")
 }

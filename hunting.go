@@ -71,7 +71,6 @@ func reject(chunk []Pix, mat *TrackingMat, width int, img image.Image, thresh fl
 	// Iterate over adjacent pixels
 	for _, p := range chunk {
 		neighbors := neighborPixels(p.x, p.y, width, img)
-
 		for _, n := range neighbors {
 
 			// ignore already visited pixels
@@ -105,13 +104,16 @@ func reject(chunk []Pix, mat *TrackingMat, width int, img image.Image, thresh fl
 func huntLines(img image.Image, colors []color.Color, thresh float64, width int) (image.Image, []Line) {
 	// We already have information about visited pixels from iter coordinates
 	// This stops the algo from re-processing a rejected shape for every pixel
-	visited := newTrackingMat(img.Bounds().Max.X+2, img.Bounds().Max.Y+1)
+	chunks := newTrackingMat(img.Bounds().Max.X+2, img.Bounds().Max.Y+1)
+	lines := newTrackingMat(img.Bounds().Max.X+2, img.Bounds().Max.Y+1)
+
+	// ret := image.NewNRGBA(img.Bounds())
 
 	iter(img, func(x, y int, c color.Color) {
-		// If this pixel has been visited do not process it
-		if visited.get(x, y) != 0 {
-			return
-		}
+		// If this is marked as chunk do not process
+		// if chunks.get(x, y) != 0 {
+		// 	return
+		// }
 
 		// -- Hunting
 		// Measure color distance between this pixel and target colors
@@ -125,17 +127,21 @@ func huntLines(img image.Image, colors []color.Color, thresh float64, width int)
 		// Determine if this is the start of a chunk or a line. Reject if chunk, Trace if line
 		matches := scanChunk(neighbors, c, 0.1)
 
-		// NOTE: only mark pixels in Chunking or Tracing, not when visiting. Otherwise visiting the edges
-		// of a line will reject the line... I think?
+		// h := float64(len(matches)) / 9.0
+		// ret.Set(x, y, colorful.Color{float64(len(matches)) / 9.0, float64(len(matches)) / 9.0, float64(len(matches)) / 9.0})
+		// fmt.Printf("Mathches: %d / %d\n", len(matches), len(neighbors))
 
 		// -- Chunking
 		// If the chunk all has the same color begin rejection: chunk and reject whole area
-		if len(matches) == (width*2 + 1) {
-			reject(neighbors, visited, width, img, thresh, c)
-			return
-		}
+		if len(matches) == len(neighbors) {
+			for _, p := range neighbors {
+				chunks.set(p.x, p.y, 1)
+			}
 
-		visited.set(x, y, 2)
+			return
+		} else {
+			lines.set(x, y, 1)
+		}
 
 		// Note: a line that connects to a chunk should not be rejected
 
@@ -156,17 +162,17 @@ func huntLines(img image.Image, colors []color.Color, thresh float64, width int)
 
 	ret := image.NewNRGBA(img.Bounds())
 
-	for x := 0; x < visited.w; x++ {
-		for y := 0; y < visited.h; y++ {
+	for x := 0; x < chunks.w; x++ {
+		for y := 0; y < chunks.h; y++ {
 
-			if v := visited.get(x, y); v == 0 {
-				ret.Set(x, y, color.Black)
+			if v := chunks.get(x, y); v == 1 {
+				ret.Set(x, y, color.NRGBA{255, 0, 0, 255})
 
-			} else if v == 1 {
-				ret.Set(x, y, color.NRGBA{225, 0, 0, 225})
+			} else if v := lines.get(x, y); v == 1 {
+				ret.Set(x, y, color.White)
 
 			} else {
-				ret.Set(x, y, color.White)
+				ret.Set(x, y, color.Black)
 			}
 		}
 	}
