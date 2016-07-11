@@ -65,9 +65,9 @@ func testhunter() {
 	target := color.NRGBA{219, 18, 29, 255}
 	allColors := []color.Color{target}
 
-	p := open("lowsett.png")
+	p := open("smallest.png")
 
-	i, _ := huntLines(p, allColors, 0.5, 1)
+	i, _ := huntLines(p, allColors, 0.5, 2)
 
 	save(i, "huntress.png")
 }
