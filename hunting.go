@@ -75,9 +75,7 @@ func hunt(img image.Image, colors []color.Color, thresh float64, width int) []Li
 
 	for _, c := range colors {
 		go func(col color.Color) {
-			fmt.Println(2)
 			ch, li := getLines(img, col, thresh, width)
-			fmt.Println(1)
 
 			chunks <- ch
 			lines <- li
@@ -86,11 +84,10 @@ func hunt(img image.Image, colors []color.Color, thresh float64, width int) []Li
 
 	done := 0
 
-	for done != len(colors)-1 {
+	for done != len(colors) {
 		allchunks = append(allchunks, <-chunks)
 		alllines = append(alllines, <-lines)
 
-		fmt.Println("Com")
 		done += 1
 	}
 

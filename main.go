@@ -3,6 +3,7 @@ package main
 import (
 	"image"
 	"image/color"
+	"runtime"
 )
 
 func runpipe() {
@@ -62,6 +63,8 @@ func testshop() {
 }
 
 func testhunter() {
+	// fmt.Printf("NumCPU: %d\n", runtime.NumCPU())
+
 	allColors := []color.Color{
 		color.NRGBA{219, 18, 29, 255},
 		color.NRGBA{140, 31, 59, 255},
@@ -82,6 +85,8 @@ func testhunter() {
 }
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	// runpipe()
 	// testshop()
 
