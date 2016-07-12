@@ -64,11 +64,14 @@ func huntLines(img image.Image, colors []color.Color, thresh float64, width int)
 	chunks := newTrackingMat(img.Bounds().Max.X+2, img.Bounds().Max.Y+1)
 	lines := newTrackingMat(img.Bounds().Max.X+2, img.Bounds().Max.Y+1)
 
+	// linePixels := []Pix{}
+	// linePoints := []gokmeans.Node{}
+
 	iter(img, func(x, y int, c color.Color) {
 		// If this is marked as chunk do not process
-		if chunks.get(x, y) != 0 {
-			return
-		}
+		// if chunks.get(x, y) != 0 {
+		// 	return
+		// }
 
 		// Measure color distance between this pixel and target colors
 		if !similarColor(c, colors, thresh) {
@@ -79,15 +82,29 @@ func huntLines(img image.Image, colors []color.Color, thresh float64, width int)
 		neighbors := neighborPixels(x, y, width, img)
 
 		// Determine if this is the start of a chunk or a line. Reject if chunk, Trace if line
-		matches := scanChunk(neighbors, c, 0.1)
+		// This thresh seems to do better higher
+		matches := scanChunk(neighbors, c, 0.4)
 
 		// -- Chunking
 		if len(matches) == len(neighbors) {
 			for _, p := range neighbors {
 				chunks.set(p.x, p.y, 1)
 			}
+
+			// extend the chunking to each of the neighboring pixels
+			for _, p := range neighbors {
+				for _, nearby := range neighborPixels(p.x, p.y, width, img) {
+					if similarColor(nearby.Color, colors, thresh) {
+						chunks.set(nearby.x, nearby.y, 1)
+					}
+				}
+			}
+
 		} else {
 			lines.set(x, y, 1)
+
+			// linePixels = append(linePixels, Pix{c, x, y})
+			// linePoints = append(linePoints, gokmeans.Node{float64(x), float64(y)})
 		}
 
 		// Note: a line that connects to a chunk should not be rejected
@@ -107,16 +124,50 @@ func huntLines(img image.Image, colors []color.Color, thresh float64, width int)
 		// Note: this isnt going into this function, put it somewhere else
 	})
 
+	// Run kmeans on the lines
+	// Get a list of centroids and output the values
+	// if success, centroids := gokmeans.Train(linePoints, 2, 25); success {
+	// 	// Show the centroids
+	// 	fmt.Println("The centroids are")
+
+	// 	for _, centroid := range centroids {
+	// 		fmt.Println(centroid)
+	// 	}
+
+	// 	// Output the clusters
+	// 	fmt.Println("...")
+	// 	for i, observation := range linePoints {
+	// 		index := gokmeans.Nearest(observation, centroids)
+	// 		// fmt.Println(observation, "belongs in cluster", index+1, ".")
+
+	// 		pix := linePixels[i]
+	// 		lines.set(pix.x, pix.y, uint8(index+1))
+	// 	}
+	// }
+
 	ret := image.NewNRGBA(img.Bounds())
 
 	for x := 0; x < chunks.w; x++ {
 		for y := 0; y < chunks.h; y++ {
 
+			// Turns chunks red
 			if v := chunks.get(x, y); v == 1 {
 				ret.Set(x, y, color.NRGBA{255, 0, 0, 255})
 
+				// if v := chunks.get(x, y); v == 1 {
+				// 	ret.Set(x, y, color.Black)
+
 			} else if v := lines.get(x, y); v == 1 {
 				ret.Set(x, y, color.White)
+
+			} else if v := lines.get(x, y); v == 2 {
+				ret.Set(x, y, color.NRGBA{255, 0, 0, 255})
+
+			} else if v := lines.get(x, y); v == 3 {
+				ret.Set(x, y, color.NRGBA{0, 255, 0, 255})
+
+			} else if v := lines.get(x, y); v == 4 {
+				ret.Set(x, y, color.NRGBA{255, 0, 255, 255})
 
 			} else {
 				ret.Set(x, y, color.Black)

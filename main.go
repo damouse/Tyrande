@@ -62,14 +62,19 @@ func testshop() {
 }
 
 func testhunter() {
-	target := color.NRGBA{219, 18, 29, 255}
-	allColors := []color.Color{target}
+	allColors := []color.Color{
+		color.NRGBA{219, 18, 29, 255},
+		color.NRGBA{140, 31, 59, 255},
+		color.NRGBA{182, 40, 59, 255},
+		color.NRGBA{212, 128, 151, 255},
+	}
+
 	p := open("lowsett.png")
 
 	// w := NewWindow()
 	// w.show(p)
 
-	i, _ := huntLines(p, allColors, 0.6, 1)
+	i, _ := huntLines(p, allColors, 0.2, 1)
 
 	// w.show(i)
 	// w.wait()
