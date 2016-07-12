@@ -74,12 +74,11 @@ func testhunter() {
 	// w := NewWindow()
 	// w.show(p)
 
-	i, _ := huntLines(p, allColors, 0.2, 1)
+	hunt(p, allColors, 0.2, 1)
 
 	// w.show(i)
 	// w.wait()
 
-	save(i, "huntress.png")
 }
 
 func main() {
