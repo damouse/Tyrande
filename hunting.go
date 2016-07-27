@@ -50,7 +50,6 @@ func getLines(img image.Image, colors []color.Color, thresh float64, width int) 
 		isClose := false
 		for _, target := range colors {
 			distance := colorDistance(c, target)
-			// fmt.Println(distance)
 
 			if distance <= thresh {
 				isClose = true
