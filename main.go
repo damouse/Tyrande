@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	COLOR_THRESHOLD float64 = 0.3
+	COLOR_THRESHOLD float64 = 0.2
 	LINE_WIDTH      int     = 1
 
 	DEBUG_DRAW_CHUNKS = false
@@ -34,7 +34,7 @@ func runOnce(colors []color.Color) {
 	// Start benchmark
 	start := time.Now()
 
-	p = photoshop(p)
+	// p = photoshop(p)
 
 	chunks, lines := hunt(p, colors, COLOR_THRESHOLD, LINE_WIDTH)
 
@@ -65,5 +65,5 @@ func main() {
 
 	runOnce(swatch)
 
-	saveShop()
+	// saveShop()
 }
