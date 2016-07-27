@@ -15,6 +15,7 @@ package main
 // Note: this isnt going into this function, put it somewhere else
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 
@@ -115,79 +116,60 @@ func getLines(img image.Image, target color.Color, thresh float64, width int) (c
 	return
 }
 
-func cluster(points []Pix, mat *TrackingMat) (ret []Line) {
+func cluster(points []Pix, mat *TrackingMat) (ret []*Line) {
 	counter := 0
 
-	for len(points) > 0 {
-		// Pop the first pixel, add it to a line
-		pix := points[0]
-		points = points[0:]
-
-		line := Line{[]Pix{pix}, counter, 0, 0}
-		ret = append(ret, line)
-		counter += 1
-
-		// Fetch neighbors
-		neighbors := neighborPixelsMat(pix.x, pix.y, 1, mat)
-
-		// Mark all neighbors
-		// Recursively extend
-	}
-
-External:
-	for _, p := range points {
-		// Check neighbors of this pixel for line membership
-		// If a neighbor match is found add this pixel to that line
-		// Else create new line and add this pixel
-
-		// Skip if this point has already been added
-		for _, line := range ret {
-			for _, pix := range line.pixels {
-				if pix == p {
-					continue External
-				}
-			}
-		}
-
-		// This pixel has not been added to a line. Create a new line now
-		ret = append(ret, Line{[]Pix{p}, len(ret), 0, 0})
-
-		// Search neighbors for
-	}
+	mat.iter(func(x, y int, pix *Pix) {
+		fmt.Printf("%d %d %v\n", x, y, pix)
+	})
 
 	return
 
-	// Old kmeans clustering
-	// linePoints := []gokmeans.Node{}
-	// for _, p := range points {
-	// 	linePoints = append(linePoints, gokmeans.Node{float64(p.x), float64(p.y)})
-	// }
+	mat.iter(func(x, y int, pix *Pix) {
+		// Ignore non-line pixels or already added pixels
+		if pix == nil || pix.line != nil {
+			return
+		}
 
-	// // Run kmeans on the lines
-	// // Get a list of centroids and output the values
-	// if success, centroids := gokmeans.Train(linePoints, 3, 25); success {
-	// 	// Show the centroids
-	// 	fmt.Println("The centroids are")
+		// Create a new line
+		line := NewLine(counter)
+		line.add(*pix)
 
-	// 	for i, centroid := range centroids {
-	// 		ret = append(ret, Line{id: i, cX: int(centroid[0]), cY: int(centroid[1])})
-	// 		fmt.Println(centroid)
-	// 	}
+		ret = append(ret, line)
+		counter += 1
 
-	// 	for i, observation := range linePoints {
-	// 		index := gokmeans.Nearest(observation, centroids)
-	// 		// fmt.Println(observation, "belongs in cluster", index+1, ".")
+		// Fetch neighbors of this pixel
+		neighbors := neighborsCluster(pix.x, pix.y, 1, mat)
 
-	// 		ret[index].pixels = append(ret[index].pixels, points[i])
-	// 	}
-	// }
+		for len(neighbors) != 0 {
+			fmt.Println("Size of neighbors ", len(neighbors))
 
-	// fmt.Printf("Clustering completing with %d clusters\n", len(ret))
-	// return
+			// Mark neighbors that are also line pixels. Remove them from points
+			for _, neigh := range neighbors {
+				line.add(*neigh)
+			}
+
+			newNeighbors := []*Pix{}
+
+			// Add neighbors of neighbors
+			for _, n := range neighbors {
+				newNeighbors = append(neighbors, neighborsCluster(n.x, n.y, 1, mat)...)
+			}
+
+			neighbors = newNeighbors
+		}
+	})
+
+	return
+}
+
+// Create a line from the given points
+func makeLine(points []Pix) (ret Line) {
+	return
 }
 
 // output an image for testing purposes
-func output(bounds image.Rectangle, chunks []Pix, lines []Line) image.Image {
+func output(bounds image.Rectangle, chunks []Pix, lines []*Line) image.Image {
 	ret := image.NewNRGBA(bounds)
 
 	iter(ret, func(x, y int, c color.Color) {
@@ -231,9 +213,8 @@ func neighborPixels(tX, tY, distance int, i image.Image) (ret []Pix) {
 	return
 }
 
-// returns all pixels within range d of target coordinates x, y
-// The pixel in the middle is included in results
-func neighborPixelsMat(tX, tY, distance int, i *TrackingMat) (ret []Pix) {
+// Like neighbors, but does not return pixels that are nil or already marked
+func neighborsCluster(tX, tY, distance int, i *TrackingMat) (ret []*Pix) {
 	for x := tX - distance; x <= tX+distance; x++ {
 		if x < 0 || x > i.w {
 			continue
@@ -244,10 +225,15 @@ func neighborPixelsMat(tX, tY, distance int, i *TrackingMat) (ret []Pix) {
 				continue
 			}
 
-			ret = append(ret, Pix{i.get(x, y), x, y, nil})
+			if p := i.get(x, y); p == nil || p.line != nil {
+				continue
+			} else {
+				ret = append(ret, p)
+			}
 		}
 	}
 
+	fmt.Println("Returning neighbors: ", len(ret))
 	return
 }
 

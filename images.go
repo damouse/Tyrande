@@ -15,6 +15,20 @@ type Line struct {
 	cX, cY int // center
 }
 
+func (l *Line) add(p Pix) {
+	l.pixels = append(l.pixels, p)
+	p.line = l
+}
+
+func NewLine(id int) *Line {
+	return &Line{
+		[]Pix{},
+		id,
+		0,
+		0,
+	}
+}
+
 type Pix struct {
 	color.Color
 	x, y int

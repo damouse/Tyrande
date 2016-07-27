@@ -85,6 +85,14 @@ func (m *TrackingMat) set(x, y int, v *Pix) {
 	m.arr[y*m.w+x] = v
 }
 
+func (m *TrackingMat) iter(fn func(x int, y int, pixel *Pix)) {
+	for y := 0; y < m.h; y++ {
+		for x := 0; x < m.w; x++ {
+			fn(x, y, m.get(x, y))
+		}
+	}
+}
+
 func euclideanDistance(a Pix, b Pix) float64 {
 	dx := float64(a.x) - float64(b.x)
 	dy := float64(a.y) - float64(b.y)
