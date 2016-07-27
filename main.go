@@ -11,7 +11,7 @@ var (
 	COLOR_THRESHOLD float64 = 0.2
 	LINE_WIDTH      int     = 1
 
-	DEBUG_DRAW_CHUNKS = false
+	DEBUG_DRAW_CHUNKS = true
 )
 
 // former manual checks on "lowsett.png"

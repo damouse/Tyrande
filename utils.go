@@ -103,3 +103,7 @@ func euclideanDistance(a Pix, b Pix) float64 {
 
 	return math.Sqrt(dx*dx + dy*dy)
 }
+
+func sq(v float64) float64 {
+	return v * v
+}

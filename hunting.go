@@ -5,6 +5,13 @@ package main
 // Determine a center
 // Determine a top
 
+// We can use this to bound the search distance for the sake of performance
+// halfX := img.Bounds().Max.X / 3
+// halfY := img.Bounds().Max.Y / 3
+
+// if x < halfX || x > halfX*2 || y < halfY || y > halfY*2 {
+// 	return
+// }
 /*
 TODO:
 	Clean pipeline
@@ -13,8 +20,10 @@ TODO:
 */
 
 import (
+	"fmt"
 	"image"
 	"image/color"
+	"math"
 
 	"github.com/lucasb-eyer/go-colorful"
 )
@@ -45,11 +54,37 @@ func hunt(img image.Image, colors []color.Color, thresh float64, width int) ([]P
 // Identifies lines in a picture that have a color within thresh distance of a color in col
 // Returns lines and chunks
 func getLines(img image.Image, colors []color.Color, thresh float64, width int) (chunkPixels []Pix, linePixels []Pix) {
+	// Can we just convert image and colors to LUV here once and then not bother with it again?
+
+	// output an image for testing purposes
+	love := image.NewNRGBA(img.Bounds())
 
 	iter(img, func(x, y int, c color.Color) {
+		love.Set(x, y, convertToColorful(c))
+	})
+
+	lovelyTargets := []colorful.Color{}
+
+	for _, c := range colors {
+		lovelyTargets = append(lovelyTargets, convertToColorful(c))
+	}
+
+	iter(img, func(x, y int, c color.Color) {
+		// Manually recasting the luv color
+		// luv := love.At(x, y).(colorful.Color)
+		luv := convertToColorful(c)
+
 		isClose := false
 		for _, target := range colors {
 			distance := colorDistance(c, target)
+
+			// Testing manual conversion
+			lt := convertToColorful(target)
+			// lt := lovelyTargets[i]
+			man := math.Sqrt(sq(lt.R-lt.R) + sq(lt.G-luv.G) + sq(lt.B-luv.B))
+
+			fmt.Println(distance, man)
+			// end testing manual conversion
 
 			if distance <= thresh {
 				isClose = true
