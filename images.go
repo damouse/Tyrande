@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 
@@ -101,11 +102,14 @@ func colorDistance(a color.Color, b color.Color) float64 {
 
 func photoshop(i image.Image) image.Image {
 	g := gift.New(
-		gift.UnsharpMask(12.0, 30.0, 20.0),
-		gift.Contrast(30),
+		// gift.Contrast(30),
 		// gift.Hue(45),
 		// gift.Gamma(0.1),
 		// gift.Saturation(10),
+		gift.Contrast(1.5),
+		gift.Saturation(100),
+		gift.Gamma(0.75),
+		// gift.UnsharpMask(12.0, 30.0, 20.0),
 	)
 
 	// 2. Create a new image of the corresponding size.
@@ -206,4 +210,44 @@ func accentColorDiffereenceGreyscaleAggregate(i image.Image) image.Image {
 			return color.Gray{uint8(255 - h*255)}
 		}
 	})
+}
+
+func loadSwatch() (result []color.Color) {
+	var ret []color.Color
+
+	i := open("swatch.png")
+
+	iter(i, func(x, y int, c color.Color) {
+		r, g, b, a := c.RGBA()
+
+		if a == 0 {
+			return
+		}
+
+		for _, c := range ret {
+			er, eg, eb, _ := c.RGBA()
+
+			if er == r && eg == g && eb == b {
+				return
+			}
+		}
+
+		ret = append(ret, c)
+	})
+
+	img := image.NewNRGBA(image.Rect(0, 0, 1, len(ret)))
+
+	for i, c := range ret {
+		r, g, b, a := c.RGBA()
+		img.SetNRGBA(0, i, color.NRGBA{uint8(r), uint8(g), uint8(b), uint8(a)})
+	}
+
+	ps := photoshop(img)
+
+	iter(ps, func(x, y int, c color.Color) {
+		result = append(result, c)
+	})
+
+	fmt.Printf("Loaded %d colors\n", len(ret))
+	return
 }

@@ -18,6 +18,20 @@ var (
 	TARGETCOLOR_LOWSETT color.NRGBA = color.NRGBA{223, 64, 59, 255} // works for second to left
 )
 
+// for "lowsett.png"
+// allColors := []color.Color{
+// 	color.NRGBA{219, 18, 29, 255},
+// 	color.NRGBA{140, 31, 59, 255},
+// 	color.NRGBA{182, 40, 59, 255},
+// 	color.NRGBA{212, 128, 151, 255},
+// }
+
+// for 0.png
+// allColors := []color.Color{
+// 	color.NRGBA{244, 88, 54, 255},
+// 	color.NRGBA{177, 38, 48, 255},
+// }
+
 type Pipeline struct {
 	results []image.Image
 }

@@ -24,7 +24,10 @@ import (
 func hunt(img image.Image, colors []color.Color, thresh float64, width int) ([]Pix, []*Line) {
 	chunks := []Pix{}
 	lines := []Pix{}
+
 	workerLock := &sync.Mutex{}
+	var wg sync.WaitGroup
+	wg.Add(len(colors))
 
 	for _, c := range colors {
 		go func(col color.Color) {
@@ -34,8 +37,12 @@ func hunt(img image.Image, colors []color.Color, thresh float64, width int) ([]P
 			chunks = append(chunks, ch...)
 			lines = append(lines, li...)
 			workerLock.Unlock()
+
+			wg.Done()
 		}(c)
 	}
+
+	wg.Wait()
 
 	// Create a new tracking matrix containing all the points
 	mat := newTrackingMat(img.Bounds().Max.X, img.Bounds().Max.Y)

@@ -18,42 +18,27 @@ func runpipe() {
 
 func testshop(p image.Image) image.Image {
 	g := gift.New(
-		gift.Contrast(1),
-		gift.Gamma(.75),
-		gift.UnsharpMask(12.0, 30.0, 20.0),
+		gift.Contrast(1.5),
+		gift.Saturation(100),
+		gift.Gamma(0.75),
+		// gift.UnsharpMask(12.0, 30.0, 20.0),
 	)
 
 	dst := image.NewNRGBA(g.Bounds(p.Bounds()))
 	g.Draw(dst, p)
 
-	// save(dst, "1.png")
-
 	return dst
 }
 
-func runOnce() {
-	// for "lowsett.png"
-	allColors := []color.Color{
-		color.NRGBA{219, 18, 29, 255},
-		color.NRGBA{140, 31, 59, 255},
-		color.NRGBA{182, 40, 59, 255},
-		color.NRGBA{212, 128, 151, 255},
-	}
-
-	// for 0.png
-	// allColors := []color.Color{
-	// 	color.NRGBA{244, 88, 54, 255},
-	// 	color.NRGBA{177, 38, 48, 255},
-	// }
-
-	p := open("lowsett.png")
+func runOnce(colors []color.Color) {
+	p := open("0.png")
 
 	// Start benchmark
 	start := time.Now()
 
-	// p = testshop(p)
+	p = testshop(p)
 
-	chunks, lines := hunt(p, allColors, 0.2, 1)
+	chunks, lines := hunt(p, colors, 0.5, 1)
 
 	// End benchmark
 	fmt.Printf("Bench: %s\n", time.Since(start))
@@ -63,8 +48,17 @@ func runOnce() {
 
 }
 
+func saveShop() {
+	p := open("0.png")
+	p = testshop(p)
+	save(p, "1.png")
+}
+
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	runOnce()
+	swatch := loadSwatch()
+
+	runOnce(swatch)
+	// saveShop()
 }
