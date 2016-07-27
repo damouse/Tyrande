@@ -18,6 +18,7 @@ type Line struct {
 type Pix struct {
 	color.Color
 	x, y int
+	line *Line
 }
 
 // Here's some more info: http://stackoverflow.com/questions/29156091/opencv-edge-border-detection-based-on-color

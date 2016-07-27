@@ -53,7 +53,7 @@ func hunt(img image.Image, colors []color.Color, thresh float64, width int) []Li
 	mat := newTrackingMat(img.Bounds().Max.X+2, img.Bounds().Max.Y+1)
 
 	for _, p := range lines {
-		mat.set(p.x, p.y, 1)
+		mat.set(p.x, p.y, &p)
 	}
 
 	// Do we want to trace lines seperately?
@@ -108,7 +108,7 @@ func getLines(img image.Image, target color.Color, thresh float64, width int) (c
 			}
 
 		} else {
-			linePixels = append(linePixels, Pix{c, x, y})
+			linePixels = append(linePixels, Pix{c, x, y, nil})
 		}
 	})
 
@@ -116,7 +116,44 @@ func getLines(img image.Image, target color.Color, thresh float64, width int) (c
 }
 
 func cluster(points []Pix, mat *TrackingMat) (ret []Line) {
-	for 
+	counter := 0
+
+	for len(points) > 0 {
+		// Pop the first pixel, add it to a line
+		pix := points[0]
+		points = points[0:]
+
+		line := Line{[]Pix{pix}, counter, 0, 0}
+		ret = append(ret, line)
+		counter += 1
+
+		// Fetch neighbors
+		neighbors := neighborPixelsMat(pix.x, pix.y, 1, mat)
+
+		// Mark all neighbors
+		// Recursively extend
+	}
+
+External:
+	for _, p := range points {
+		// Check neighbors of this pixel for line membership
+		// If a neighbor match is found add this pixel to that line
+		// Else create new line and add this pixel
+
+		// Skip if this point has already been added
+		for _, line := range ret {
+			for _, pix := range line.pixels {
+				if pix == p {
+					continue External
+				}
+			}
+		}
+
+		// This pixel has not been added to a line. Create a new line now
+		ret = append(ret, Line{[]Pix{p}, len(ret), 0, 0})
+
+		// Search neighbors for
+	}
 
 	return
 
@@ -187,7 +224,27 @@ func neighborPixels(tX, tY, distance int, i image.Image) (ret []Pix) {
 				continue
 			}
 
-			ret = append(ret, Pix{i.At(x, y), x, y})
+			ret = append(ret, Pix{i.At(x, y), x, y, nil})
+		}
+	}
+
+	return
+}
+
+// returns all pixels within range d of target coordinates x, y
+// The pixel in the middle is included in results
+func neighborPixelsMat(tX, tY, distance int, i *TrackingMat) (ret []Pix) {
+	for x := tX - distance; x <= tX+distance; x++ {
+		if x < 0 || x > i.w {
+			continue
+		}
+
+		for y := tY - distance; y <= tY+distance; y++ {
+			if y < 0 || y > i.h {
+				continue
+			}
+
+			ret = append(ret, Pix{i.get(x, y), x, y, nil})
 		}
 	}
 

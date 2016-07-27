@@ -65,23 +65,23 @@ func convertToColorful(c color.Color) colorful.Color {
 // Tracks the results of a GroupLines operation
 // 0 is univisited, 1 is rejected, 2 is line
 type TrackingMat struct {
-	arr  []uint8
+	arr  []*Pix
 	w, h int
 }
 
 func newTrackingMat(width, height int) *TrackingMat {
 	return &TrackingMat{
-		arr: make([]uint8, width*height),
+		arr: make([]*Pix, width*height),
 		w:   width,
 		h:   height,
 	}
 }
 
-func (m *TrackingMat) get(x, y int) uint8 {
+func (m *TrackingMat) get(x, y int) *Pix {
 	return m.arr[y*m.w+x]
 }
 
-func (m *TrackingMat) set(x, y int, v uint8) {
+func (m *TrackingMat) set(x, y int, v *Pix) {
 	m.arr[y*m.w+x] = v
 }
 
