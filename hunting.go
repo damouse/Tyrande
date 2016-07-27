@@ -15,10 +15,8 @@ package main
 // Note: this isnt going into this function, put it somewhere else
 
 import (
-	"fmt"
 	"image"
 	"image/color"
-	"os"
 
 	"github.com/lucasb-eyer/go-colorful"
 )
@@ -132,40 +130,10 @@ func cluster(points []Pix, mat *TrackingMat) (ret []*Line) {
 		line := NewLine(0)
 		line.add(pix)
 
-		fmt.Println("First point: ", pix)
-
 		ret = append(ret, line)
 
 		// Fetch neighbors of this pixel
-		temp := neighborsCluster(pix.x, pix.y, 1, mat)
-
-		for _, z := range temp {
-			if z == nil {
-				fmt.Println(z)
-			} else {
-				fmt.Printf("%v, isnil: %v\n", z, z.line == nil)
-			}
-		}
-
-		neighbors := filter(temp)
-		fmt.Println()
-
-		for _, z := range neighbors {
-			if z == nil {
-				fmt.Println(z)
-			} else {
-				fmt.Printf("%v, isnil: %v\n", z, z.line == nil)
-			}
-		}
-
-		// fmt.Printf("Neighbors: %v\n", neighbors[0])
-		os.Exit(0)
-
-		for _, p := range temp {
-			if p != nil && p.line != nil {
-				neighbors = append(neighbors, p)
-			}
-		}
+		neighbors := neighborsCluster(pix.x, pix.y, 1, mat)
 
 		for len(neighbors) != 0 {
 			// fmt.Println("Size of neighbors ", len(neighbors))
@@ -179,9 +147,7 @@ func cluster(points []Pix, mat *TrackingMat) (ret []*Line) {
 
 			// Add neighbors of neighbors
 			for _, n := range neighbors {
-				temp := neighborsCluster(n.x, n.y, 1, mat)
-				newNeighbors = append(newNeighbors, filter(temp)...)
-
+				newNeighbors = append(newNeighbors, neighborsCluster(n.x, n.y, 1, mat)...)
 			}
 
 			neighbors = newNeighbors
@@ -193,7 +159,7 @@ func cluster(points []Pix, mat *TrackingMat) (ret []*Line) {
 
 func filter(a []*Pix) (ret []*Pix) {
 	for _, p := range a {
-		if p != nil && p.line == nil {
+		if p != nil && p.line != nil {
 			ret = append(ret, p)
 		}
 	}
@@ -277,7 +243,9 @@ func neighborsCluster(tX, tY, distance int, i *TrackingMat) (ret []*Pix) {
 				continue
 			}
 
-			ret = append(ret, i.get(x, y))
+			if p := i.get(x, y); p != nil && p.line == nil {
+				ret = append(ret, p)
+			}
 		}
 	}
 
