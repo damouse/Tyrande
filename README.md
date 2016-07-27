@@ -19,3 +19,30 @@ Make sure the script compiles.
 cd Documents\code\go\src\github.com\lazywei\go-opencv\samples && go run hellocv.go
 ```
 
+### Profiling
+
+Instructions taken from here: https://medium.com/@hackintoshrao/daily-code-optimization-using-benchmarks-and-profiling-in-golang-gophercon-india-2016-talk-874c8b4dc3c5#.wlwu2sxi8
+
+Run profiling command:
+
+```
+go test -run=^$ -bench=. -cpuprofile=cpu.out
+```
+
+Examine output:
+
+```
+go tool pprof tyrande.test.exe cpu.out
+```
+
+See top 20 functions: 
+
+```
+top20
+```
+
+Export to SVG: 
+
+```
+web
+```

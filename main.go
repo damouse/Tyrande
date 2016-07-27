@@ -34,8 +34,6 @@ func runOnce(colors []color.Color) {
 	// Start benchmark
 	start := time.Now()
 
-	// p = photoshop(p)
-
 	chunks, lines := hunt(p, colors, COLOR_THRESHOLD, LINE_WIDTH)
 
 	// End benchmark
@@ -55,7 +53,9 @@ func saveShop() {
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
+	// Until the perfromance issues are handled within getLines we cant handle all the swatch colors
 	// swatch := loadSwatch()
+
 	swatch := []color.Color{
 		color.NRGBA{219, 18, 29, 255},
 		color.NRGBA{140, 31, 59, 255},
