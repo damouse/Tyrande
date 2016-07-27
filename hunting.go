@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"os"
 
 	"github.com/lucasb-eyer/go-colorful"
 )
@@ -54,15 +55,12 @@ func hunt(img image.Image, colors []color.Color, thresh float64, width int) []Li
 	mat := newTrackingMat(img.Bounds().Max.X, img.Bounds().Max.Y)
 
 	for _, p := range lines {
-		// fmt.Println(p)
 		mat.setPix(p)
-		// a := mat.get(p.x, p.y)
-		// fmt.Printf("Before: %v After: %v\n", p, a)
 	}
 
 	// Test to make sure the matrix we made is sane
-	tester := outputMat(img.Bounds(), mat)
-	go save(tester, "mat.png")
+	// tester := outputMat(img.Bounds(), mat)
+	// go save(tester, "mat.png")
 
 	// Do we want to trace lines seperately?
 	trueLines := cluster(lines, mat)
@@ -124,14 +122,6 @@ func getLines(img image.Image, target color.Color, thresh float64, width int) (c
 }
 
 func cluster(points []Pix, mat *TrackingMat) (ret []*Line) {
-	counter := 0
-
-	mat.iter(func(x, y int, pix *Pix) {
-		fmt.Printf("%d %d %v\n", x, y, pix)
-	})
-
-	return
-
 	mat.iter(func(x, y int, pix *Pix) {
 		// Ignore non-line pixels or already added pixels
 		if pix == nil || pix.line != nil {
@@ -139,33 +129,74 @@ func cluster(points []Pix, mat *TrackingMat) (ret []*Line) {
 		}
 
 		// Create a new line
-		line := NewLine(counter)
-		line.add(*pix)
+		line := NewLine(0)
+		line.add(pix)
+
+		fmt.Println("First point: ", pix)
 
 		ret = append(ret, line)
-		counter += 1
 
 		// Fetch neighbors of this pixel
-		neighbors := neighborsCluster(pix.x, pix.y, 1, mat)
+		temp := neighborsCluster(pix.x, pix.y, 1, mat)
+
+		for _, z := range temp {
+			if z == nil {
+				fmt.Println(z)
+			} else {
+				fmt.Printf("%v, isnil: %v\n", z, z.line == nil)
+			}
+		}
+
+		neighbors := filter(temp)
+		fmt.Println()
+
+		for _, z := range neighbors {
+			if z == nil {
+				fmt.Println(z)
+			} else {
+				fmt.Printf("%v, isnil: %v\n", z, z.line == nil)
+			}
+		}
+
+		// fmt.Printf("Neighbors: %v\n", neighbors[0])
+		os.Exit(0)
+
+		for _, p := range temp {
+			if p != nil && p.line != nil {
+				neighbors = append(neighbors, p)
+			}
+		}
 
 		for len(neighbors) != 0 {
-			fmt.Println("Size of neighbors ", len(neighbors))
+			// fmt.Println("Size of neighbors ", len(neighbors))
 
 			// Mark neighbors that are also line pixels. Remove them from points
 			for _, neigh := range neighbors {
-				line.add(*neigh)
+				line.add(neigh)
 			}
 
 			newNeighbors := []*Pix{}
 
 			// Add neighbors of neighbors
 			for _, n := range neighbors {
-				newNeighbors = append(neighbors, neighborsCluster(n.x, n.y, 1, mat)...)
+				temp := neighborsCluster(n.x, n.y, 1, mat)
+				newNeighbors = append(newNeighbors, filter(temp)...)
+
 			}
 
 			neighbors = newNeighbors
 		}
 	})
+
+	return
+}
+
+func filter(a []*Pix) (ret []*Pix) {
+	for _, p := range a {
+		if p != nil && p.line == nil {
+			ret = append(ret, p)
+		}
+	}
 
 	return
 }
@@ -237,24 +268,19 @@ func neighborPixels(tX, tY, distance int, i image.Image) (ret []Pix) {
 // Like neighbors, but does not return pixels that are nil or already marked
 func neighborsCluster(tX, tY, distance int, i *TrackingMat) (ret []*Pix) {
 	for x := tX - distance; x <= tX+distance; x++ {
-		if x < 0 || x > i.w {
+		if x < 0 || x > i.h {
 			continue
 		}
 
 		for y := tY - distance; y <= tY+distance; y++ {
-			if y < 0 || y > i.h {
+			if y < 0 || y > i.w {
 				continue
 			}
 
-			if p := i.get(x, y); p == nil || p.line != nil {
-				continue
-			} else {
-				ret = append(ret, p)
-			}
+			ret = append(ret, i.get(x, y))
 		}
 	}
 
-	fmt.Println("Returning neighbors: ", len(ret))
 	return
 }
 

@@ -92,7 +92,6 @@ func (m *TrackingMat) setPix(p Pix) {
 func (m *TrackingMat) iter(fn func(x int, y int, pixel *Pix)) {
 	for y := 0; y < m.w; y++ {
 		for x := 0; x < m.h; x++ {
-			// fmt.Printf("Getting %d, %d, %v\n", x, y, m.get(x, y))
 			fn(x, y, m.get(x, y))
 		}
 	}
@@ -104,15 +103,3 @@ func euclideanDistance(a Pix, b Pix) float64 {
 
 	return math.Sqrt(dx*dx + dy*dy)
 }
-
-// Testing code: this works
-// mat := newTrackingMat(3, 3)
-
-// mat.set(0, 0, &Pix{color.White, 1, 1, nil})
-// mat.set(0, 0, &Pix{color.White, 0, 0, nil})
-// mat.set(1, 1, &Pix{color.White, 1, 1, nil})
-// mat.set(2, 2, &Pix{color.White, 2, 2, nil})
-
-// mat.iter(func(x, y int, p *Pix) {
-// 	fmt.Println(x, y, p)
-// })

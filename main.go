@@ -91,4 +91,23 @@ func main() {
 	// testshop()
 
 	testhunter()
+
+	// Testing code: this works
+	// mat := newTrackingMat(3, 3)
+
+	// mat.set(0, 0, &Pix{color.White, 1, 1, nil})
+	// mat.set(0, 0, &Pix{color.White, 0, 0, nil})
+	// mat.set(1, 1, &Pix{color.White, 1, 1, nil})
+	// mat.set(2, 2, &Pix{color.White, 2, 2, nil})
+
+	// mat.iter(func(x, y int, p *Pix) {
+	// 	fmt.Println(x, y, p)
+	// })
+
+	// l := NewLine(0)
+	// l.add(mat.get(0, 0))
+
+	// mat.iter(func(x, y int, p *Pix) {
+	// 	fmt.Println(x, y, p)
+	// })
 }

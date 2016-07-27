@@ -10,19 +10,19 @@ import (
 
 // Modeling and detecting on-screen players
 type Line struct {
-	pixels []Pix
+	pixels []*Pix
 	id     int
 	cX, cY int // center
 }
 
-func (l *Line) add(p Pix) {
+func (l *Line) add(p *Pix) {
 	l.pixels = append(l.pixels, p)
 	p.line = l
 }
 
 func NewLine(id int) *Line {
 	return &Line{
-		[]Pix{},
+		[]*Pix{},
 		id,
 		0,
 		0,
