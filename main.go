@@ -2,13 +2,25 @@ package main
 
 import (
 	"fmt"
-	"image"
 	"image/color"
 	"runtime"
 	"time"
-
-	"github.com/disintegration/gift"
 )
+
+var (
+	COLOR_THRESHOLD float64 = 0.3
+	LINE_WIDTH      int     = 1
+
+	DEBUG_DRAW_CHUNKS = false
+)
+
+// former manual checks on "lowsett.png"
+// allColors := []color.Color{
+// 	color.NRGBA{219, 18, 29, 255},
+// 	color.NRGBA{140, 31, 59, 255},
+// 	color.NRGBA{182, 40, 59, 255},
+// 	color.NRGBA{212, 128, 151, 255},
+// }
 
 func runpipe() {
 	p := NewPipeline()
@@ -16,29 +28,15 @@ func runpipe() {
 	p.save()
 }
 
-func testshop(p image.Image) image.Image {
-	g := gift.New(
-		gift.Contrast(1.5),
-		gift.Saturation(100),
-		gift.Gamma(0.75),
-		// gift.UnsharpMask(12.0, 30.0, 20.0),
-	)
-
-	dst := image.NewNRGBA(g.Bounds(p.Bounds()))
-	g.Draw(dst, p)
-
-	return dst
-}
-
 func runOnce(colors []color.Color) {
-	p := open("0.png")
+	p := open("lowsett.png")
 
 	// Start benchmark
 	start := time.Now()
 
-	p = testshop(p)
+	p = photoshop(p)
 
-	chunks, lines := hunt(p, colors, 0.5, 1)
+	chunks, lines := hunt(p, colors, COLOR_THRESHOLD, LINE_WIDTH)
 
 	// End benchmark
 	fmt.Printf("Bench: %s\n", time.Since(start))
@@ -49,16 +47,23 @@ func runOnce(colors []color.Color) {
 }
 
 func saveShop() {
-	p := open("0.png")
-	p = testshop(p)
+	p := open("lowsett.png")
+	p = photoshop(p)
 	save(p, "1.png")
 }
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	swatch := loadSwatch()
+	// swatch := loadSwatch()
+	swatch := []color.Color{
+		color.NRGBA{219, 18, 29, 255},
+		color.NRGBA{140, 31, 59, 255},
+		color.NRGBA{182, 40, 59, 255},
+		color.NRGBA{212, 128, 151, 255},
+	}
 
 	runOnce(swatch)
-	// saveShop()
+
+	saveShop()
 }

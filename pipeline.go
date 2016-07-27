@@ -3,34 +3,8 @@ package main
 import (
 	"fmt"
 	"image"
-	"image/color"
 	"time"
 )
-
-var (
-	EDGE_THRESHOLD float64 = 100 // Canny recognizer threshold
-
-	SEPERATION_THRESHOLD    float64     = 0.35 // colors greater in distance than this are turned black
-	SEPERATION_TARGETCOLOR1 color.NRGBA = color.NRGBA{255, 0, 0, 255}
-	SEPERATION_TARGETCOLOR2 color.NRGBA = color.NRGBA{166, 64, 71, 255} // works for leftmost
-	SEPERATION_TARGETCOLOR3 color.NRGBA = color.NRGBA{224, 84, 64, 255} // works for second to left
-
-	TARGETCOLOR_LOWSETT color.NRGBA = color.NRGBA{223, 64, 59, 255} // works for second to left
-)
-
-// for "lowsett.png"
-// allColors := []color.Color{
-// 	color.NRGBA{219, 18, 29, 255},
-// 	color.NRGBA{140, 31, 59, 255},
-// 	color.NRGBA{182, 40, 59, 255},
-// 	color.NRGBA{212, 128, 151, 255},
-// }
-
-// for 0.png
-// allColors := []color.Color{
-// 	color.NRGBA{244, 88, 54, 255},
-// 	color.NRGBA{177, 38, 48, 255},
-// }
 
 type Pipeline struct {
 	results []image.Image
@@ -55,7 +29,7 @@ func (p *Pipeline) run(img image.Image) {
 	// i = p.add(accentColorDifference(i))
 
 	// Check against all seperation colors
-	i = p.add(accentColorDiffereenceGreyscaleAggregate(i))
+	// i = p.add(accentColorDiffereenceGreyscaleAggregate(i))
 
 	// Pick the right color and drop it in a greyscale
 	// i = p.add(accentColorDiffereenceGreyscale(i, SEPERATION_TARGETCOLOR3, SEPERATION_THRESHOLD))

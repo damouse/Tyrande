@@ -15,34 +15,13 @@ TODO:
 import (
 	"image"
 	"image/color"
-	"sync"
 
 	"github.com/lucasb-eyer/go-colorful"
 )
 
 // Note: a line that connects to a chunk should not be rejected
 func hunt(img image.Image, colors []color.Color, thresh float64, width int) ([]Pix, []*Line) {
-	chunks := []Pix{}
-	lines := []Pix{}
-
-	workerLock := &sync.Mutex{}
-	var wg sync.WaitGroup
-	wg.Add(len(colors))
-
-	for _, c := range colors {
-		go func(col color.Color) {
-			ch, li := getLines(img, col, thresh, width)
-
-			workerLock.Lock()
-			chunks = append(chunks, ch...)
-			lines = append(lines, li...)
-			workerLock.Unlock()
-
-			wg.Done()
-		}(c)
-	}
-
-	wg.Wait()
+	chunks, lines := getLines(img, colors, thresh, width)
 
 	// Create a new tracking matrix containing all the points
 	mat := newTrackingMat(img.Bounds().Max.X, img.Bounds().Max.Y)
@@ -51,9 +30,9 @@ func hunt(img image.Image, colors []color.Color, thresh float64, width int) ([]P
 	}
 
 	// Try masking lines with chunks
-	for _, p := range chunks {
-		mat.set(p.x, p.y, nil)
-	}
+	// for _, p := range chunks {
+	// 	mat.set(p.x, p.y, nil)
+	// }
 
 	// Do we want to trace lines seperately?
 	raw := cluster(lines, mat)
@@ -75,11 +54,16 @@ func aggregate(mat [][]Pix) (ret []Pix) {
 
 // Identifies lines in a picture that have a color within thresh distance of a color in col
 // Returns lines and chunks
-func getLines(img image.Image, target color.Color, thresh float64, width int) (chunkPixels []Pix, linePixels []Pix) {
+func getLines(img image.Image, colors []color.Color, thresh float64, width int) (chunkPixels []Pix, linePixels []Pix) {
 
 	iter(img, func(x, y int, c color.Color) {
 		// Measure color distance between this pixel and target colors
-		if distance := colorDistance(c, target); distance > thresh {
+		for _, target := range colors {
+			// if distance := colorDistance(c, target); distance > thresh {
+			if distance := colorDistance(c, target); distance < thresh {
+				break
+			}
+
 			return
 		}
 
@@ -174,9 +158,11 @@ func output(bounds image.Rectangle, chunks []Pix, lines []*Line) image.Image {
 	}
 
 	// Write out the chunks in white
-	// for _, p := range chunks {
-	// 	ret.Set(p.x, p.y, color.White)
-	// }
+	if DEBUG_DRAW_CHUNKS {
+		for _, p := range chunks {
+			ret.Set(p.x, p.y, color.White)
+		}
+	}
 
 	return ret
 }
