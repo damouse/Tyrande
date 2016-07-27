@@ -51,11 +51,18 @@ func hunt(img image.Image, colors []color.Color, thresh float64, width int) []Li
 	}
 
 	// Create a new tracking matrix containing all the points
-	mat := newTrackingMat(img.Bounds().Max.X+2, img.Bounds().Max.Y+1)
+	mat := newTrackingMat(img.Bounds().Max.X, img.Bounds().Max.Y)
 
 	for _, p := range lines {
-		mat.set(p.x, p.y, &p)
+		// fmt.Println(p)
+		mat.setPix(p)
+		// a := mat.get(p.x, p.y)
+		// fmt.Printf("Before: %v After: %v\n", p, a)
 	}
+
+	// Test to make sure the matrix we made is sane
+	tester := outputMat(img.Bounds(), mat)
+	go save(tester, "mat.png")
 
 	// Do we want to trace lines seperately?
 	trueLines := cluster(lines, mat)
@@ -187,6 +194,20 @@ func output(bounds image.Rectangle, chunks []Pix, lines []*Line) image.Image {
 			ret.Set(pix.x, pix.y, rcolor)
 		}
 	}
+
+	return ret
+}
+
+func outputMat(bounds image.Rectangle, mat *TrackingMat) image.Image {
+	ret := image.NewNRGBA(bounds)
+
+	mat.iter(func(x, y int, c *Pix) {
+		if c == nil {
+			ret.Set(x, y, color.Black)
+		} else {
+			ret.Set(c.x, c.y, c.Color)
+		}
+	})
 
 	return ret
 }
