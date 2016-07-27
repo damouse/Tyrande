@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 
+	"github.com/lucasb-eyer/go-colorful"
 	"github.com/mdesenfants/gokmeans"
 )
 
@@ -51,17 +52,6 @@ func scanChunk(chunk []Pix, color color.Color, thresh float64) (ret []Pix) {
 	}
 
 	return
-}
-
-// Check for a match in one of the colors. Return true if its within thresh of a color in targets
-func similarColor(c color.Color, targets []color.Color, thresh float64) bool {
-	for _, t := range targets {
-		if distance := colorDistance(c, t); distance < thresh {
-			return true
-		}
-	}
-
-	return false
 }
 
 // Note: a line that connects to a chunk should not be rejected
@@ -114,79 +104,6 @@ func aggregate(mat [][]Pix) (ret []Pix) {
 	}
 
 	return
-}
-
-func cluster(points []Pix, groups int, iterations int) (ret []Line) {
-
-	linePoints := []gokmeans.Node{}
-	for _, p := range points {
-		linePoints = append(linePoints, gokmeans.Node{float64(p.x), float64(p.y)})
-	}
-
-	// Run kmeans on the lines
-	// Get a list of centroids and output the values
-	if success, centroids := gokmeans.Train(linePoints, 2, 25); success {
-		// Show the centroids
-		fmt.Println("The centroids are")
-
-		for i, centroid := range centroids {
-			ret = append(ret, Line{id: i, cX: int(centroid[0]), cY: int(centroid[1])})
-			fmt.Println(centroid)
-		}
-
-		for i, observation := range linePoints {
-			index := gokmeans.Nearest(observation, centroids)
-			// fmt.Println(observation, "belongs in cluster", index+1, ".")
-
-			ret[index].pixels = append(ret[index].pixels, points[i])
-		}
-	}
-
-	fmt.Printf("Clustering completing with %d clusters\n", len(ret))
-	return
-}
-
-func colorify(img image.Image, pix []Pix, c color.Color) {
-	// for _, p := range pix {
-	// 	ret.Set(p.x, p.y, color.NRGBA{255, 0, 0, 255})
-	// }
-}
-
-// output an image for testing purposes
-func output(bounds image.Rectangle, chunks []Pix, lines []Line) image.Image {
-	ret := image.NewNRGBA(bounds)
-
-	iter(ret, func(x, y int, c color.Color) {
-		ret.Set(x, y, color.Black)
-	})
-
-	// for _, p := range lines {
-	// 	ret.Set(p.x, p.y, color.NRGBA{255, 255, 255, 255})
-	// }
-
-	for _, p := range chunks {
-		ret.Set(p.x, p.y, color.NRGBA{100, 100, 100, 255})
-	}
-
-	for i, line := range lines {
-		for _, pix := range line.pixels {
-			if i == 0 {
-				ret.Set(pix.x, pix.y, color.White)
-
-			} else if i == 1 {
-				ret.Set(pix.x, pix.y, color.NRGBA{255, 0, 0, 255})
-
-			} else if i == 2 {
-				ret.Set(pix.x, pix.y, color.NRGBA{0, 255, 0, 255})
-
-			} else if i == 3 {
-				ret.Set(pix.x, pix.y, color.NRGBA{255, 0, 255, 255})
-
-			}
-		}
-	}
-
-	return ret
 }
 
 // -- Tracing
@@ -242,25 +159,56 @@ func getLines(img image.Image, target color.Color, thresh float64, width int) (c
 	return
 }
 
-// Tracks the results of a GroupLines operation
-// 0 is univisited, 1 is rejected, 2 is line
-type TrackingMat struct {
-	arr  []uint8
-	w, h int
-}
+// output an image for testing purposes
+func output(bounds image.Rectangle, chunks []Pix, lines []Line) image.Image {
+	ret := image.NewNRGBA(bounds)
 
-func newTrackingMat(width, height int) *TrackingMat {
-	return &TrackingMat{
-		arr: make([]uint8, width*height),
-		w:   width,
-		h:   height,
+	iter(ret, func(x, y int, c color.Color) {
+		ret.Set(x, y, color.Black)
+	})
+
+	// for _, p := range chunks {
+	// 	ret.Set(p.x, p.y, color.White)
+	// }
+
+	for _, line := range lines {
+		rcolor := colorful.FastHappyColor()
+
+		for _, pix := range line.pixels {
+			ret.Set(pix.x, pix.y, rcolor)
+		}
 	}
+
+	return ret
 }
 
-func (m *TrackingMat) get(x, y int) uint8 {
-	return m.arr[y*m.w+x]
-}
+// No longer used
+func cluster(points []Pix, groups int, iterations int) (ret []Line) {
 
-func (m *TrackingMat) set(x, y int, v uint8) {
-	m.arr[y*m.w+x] = v
+	linePoints := []gokmeans.Node{}
+	for _, p := range points {
+		linePoints = append(linePoints, gokmeans.Node{float64(p.x), float64(p.y)})
+	}
+
+	// Run kmeans on the lines
+	// Get a list of centroids and output the values
+	if success, centroids := gokmeans.Train(linePoints, 3, 25); success {
+		// Show the centroids
+		fmt.Println("The centroids are")
+
+		for i, centroid := range centroids {
+			ret = append(ret, Line{id: i, cX: int(centroid[0]), cY: int(centroid[1])})
+			fmt.Println(centroid)
+		}
+
+		for i, observation := range linePoints {
+			index := gokmeans.Nearest(observation, centroids)
+			// fmt.Println(observation, "belongs in cluster", index+1, ".")
+
+			ret[index].pixels = append(ret[index].pixels, points[i])
+		}
+	}
+
+	fmt.Printf("Clustering completing with %d clusters\n", len(ret))
+	return
 }

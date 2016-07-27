@@ -60,3 +60,26 @@ func convertToColorful(c color.Color) colorful.Color {
 	r, g, b, _ := c.RGBA()
 	return colorful.Color{float64(r) / 65535.0, float64(g) / 65535.0, float64(b) / 65535.0}
 }
+
+// Tracks the results of a GroupLines operation
+// 0 is univisited, 1 is rejected, 2 is line
+type TrackingMat struct {
+	arr  []uint8
+	w, h int
+}
+
+func newTrackingMat(width, height int) *TrackingMat {
+	return &TrackingMat{
+		arr: make([]uint8, width*height),
+		w:   width,
+		h:   height,
+	}
+}
+
+func (m *TrackingMat) get(x, y int) uint8 {
+	return m.arr[y*m.w+x]
+}
+
+func (m *TrackingMat) set(x, y int, v uint8) {
+	m.arr[y*m.w+x] = v
+}
