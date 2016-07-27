@@ -61,10 +61,14 @@ func hunt(img image.Image, colors []color.Color, thresh float64, width int) []Li
 	// go save(tester, "mat.png")
 
 	// Do we want to trace lines seperately?
-	trueLines := cluster(lines, mat)
+	raw := cluster(lines, mat)
 
-	// Do some coloring
-	p := output(img.Bounds(), chunks, trueLines)
+	// Filter out obvious non-outlines
+	filtered := filterLines(raw)
+
+	//
+	// Do some coloring and save the image for demo
+	p := output(img.Bounds(), chunks, filtered)
 	save(p, "huntress.png")
 
 	return nil
@@ -126,33 +130,39 @@ func cluster(points []Pix, mat *TrackingMat) (ret []*Line) {
 			return
 		}
 
-		// Create a new line
+		q := []*Pix{pix}
 		line := NewLine(0)
-		line.add(pix)
-
 		ret = append(ret, line)
 
-		// Fetch neighbors of this pixel
-		neighbors := neighborsCluster(pix.x, pix.y, 1, mat)
+		for len(q) > 0 {
+			next := q[0]
+			q = q[1:]
 
-		for len(neighbors) != 0 {
-			// fmt.Println("Size of neighbors ", len(neighbors))
-
-			// Mark neighbors that are also line pixels. Remove them from points
-			for _, neigh := range neighbors {
-				line.add(neigh)
+			// continue if next is marked
+			if next.line != nil {
+				continue
 			}
 
-			newNeighbors := []*Pix{}
+			// Add next
+			line.add(next)
 
-			// Add neighbors of neighbors
-			for _, n := range neighbors {
-				newNeighbors = append(newNeighbors, neighborsCluster(n.x, n.y, 1, mat)...)
-			}
-
-			neighbors = newNeighbors
+			// Queue neighbors
+			q = append(q, neighborsCluster(next.x, next.y, 1, mat)...)
 		}
 	})
+
+	return
+}
+
+// Filter lines that dont look like actual lines
+func filterLines(lines []*Line) (ret []*Line) {
+	for _, l := range lines {
+		if len(l.pixels) < 100 {
+			continue
+		}
+
+		ret = append(ret, l)
+	}
 
 	return
 }

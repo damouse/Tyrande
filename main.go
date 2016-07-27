@@ -72,7 +72,7 @@ func testhunter() {
 		color.NRGBA{212, 128, 151, 255},
 	}
 
-	p := open("small.png")
+	p := open("lowsett.png")
 
 	// w := NewWindow()
 	// w.show(p)

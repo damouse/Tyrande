@@ -90,8 +90,8 @@ func (m *TrackingMat) setPix(p Pix) {
 }
 
 func (m *TrackingMat) iter(fn func(x int, y int, pixel *Pix)) {
-	for y := 0; y < m.w; y++ {
-		for x := 0; x < m.h; x++ {
+	for y := 0; y < m.h; y++ {
+		for x := 0; x < m.w; x++ {
 			fn(x, y, m.get(x, y))
 		}
 	}

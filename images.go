@@ -16,8 +16,23 @@ type Line struct {
 }
 
 func (l *Line) add(p *Pix) {
-	l.pixels = append(l.pixels, p)
-	p.line = l
+	if p.line == nil {
+		l.pixels = append(l.pixels, p)
+		p.line = l
+	}
+}
+
+func (l *Line) addAll(p []*Pix) {
+	for _, a := range p {
+		l.add(a)
+	}
+}
+
+func (l *Line) merge(o *Line) {
+	for _, p := range o.pixels {
+		p.line = nil
+		l.add(p)
+	}
 }
 
 func NewLine(id int) *Line {
