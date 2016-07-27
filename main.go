@@ -1,10 +1,26 @@
 package main
 
 import (
-	"image"
+	"fmt"
 	"image/color"
 	"runtime"
+	"time"
 )
+
+var (
+	COLOR_THRESHOLD float64 = 0.2
+	LINE_WIDTH      int     = 1
+
+	DEBUG_DRAW_CHUNKS = false
+)
+
+// former manual checks on "lowsett.png"
+// allColors := []color.Color{
+// 	color.NRGBA{219, 18, 29, 255},
+// 	color.NRGBA{140, 31, 59, 255},
+// 	color.NRGBA{182, 40, 59, 255},
+// 	color.NRGBA{212, 128, 151, 255},
+// }
 
 func runpipe() {
 	p := NewPipeline()
@@ -12,102 +28,51 @@ func runpipe() {
 	p.save()
 }
 
-func testshop() {
+func runOnce(colors []color.Color, w *Window) {
 	// p := open("lowsett.png")
 
-	// g := gift.New(
-	// 	gift.Contrast(1),
-	// 	gift.Gamma(.75),
-	// 	gift.ColorFunc(
-	// 		func(r0, g0, b0, a0 float32) (r, g, b, a float32) {
-	// 			r = r0 - (100.0 / 255.0) // invert the red channel
-	// 			g = g0 - (60.0 / 255.0)  // shift the green channel by 0.1
-	// 			b = b0                   // set the blue channel to 0
-	// 			a = a0                   // preserve the alpha channel
-	// 			return
-	// 		},
-	// 	),
-	// )
+	for {
+		p := open("lowsett.png")
+		// Start benchmark
+		start := time.Now()
 
-	// dst := image.NewNRGBA(g.Bounds(p.Bounds()))
-	// g.Draw(dst, p)
-	// go save(dst, "11.png")
+		chunks, lines := hunt(p, colors, COLOR_THRESHOLD, LINE_WIDTH)
 
-	// p = accentColorDiffereenceGreyscale(dst, color.NRGBA{188, 5, 18, 255}, 0.7)
+		// End benchmark
+		fmt.Printf("Hunt completed in: %s\n", time.Since(start))
 
-	dst := open("11.png")
+		p = output(p.Bounds(), chunks, lines)
 
-	b := dst.Bounds()
-	n := image.NewGray(b)
-
-	// For all pixels
-	for x := b.Min.X; x < b.Max.X; x++ {
-		for y := b.Min.Y; y < b.Max.Y; y++ {
-			c := dst.At(x, y)
-
-			// get similiarity between this and target colors
-			h := colorDistance(c, color.NRGBA{188, 5, 18, 255})
-
-			// If the color is not similar set to black and continue
-			if h > 0.8 {
-				n.SetGray(x, y, color.Gray{0})
-				continue
-			}
-
-			// For all neighboring pixels
-			// n.SetGray(x, y, color.Gray{uint8(255 - h*255)})
-		}
+		w.show(p)
 	}
 
-	save(n, "12.png")
+	// save(p, "huntress.png")
 }
 
-func testhunter() {
-	// fmt.Printf("NumCPU: %d\n", runtime.NumCPU())
+func saveShop() {
+	p := open("lowsett.png")
+	p = photoshop(p)
+	save(p, "1.png")
+}
 
-	allColors := []color.Color{
+func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
+	// Until the perfromance issues are handled within getLines we cant handle all the swatch colors
+	// swatch := loadSwatch()
+
+	swatch := []color.Color{
 		color.NRGBA{219, 18, 29, 255},
 		color.NRGBA{140, 31, 59, 255},
 		color.NRGBA{182, 40, 59, 255},
 		color.NRGBA{212, 128, 151, 255},
 	}
 
-	p := open("lowsett.png")
+	w := NewWindow()
 
-	// w := NewWindow()
-	// w.show(p)
+	go runOnce(swatch, w)
 
-	hunt(p, allColors, 0.2, 1)
+	w.wait()
 
-	// w.show(i)
-	// w.wait()
-
-}
-
-func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
-
-	// runpipe()
-	// testshop()
-
-	testhunter()
-
-	// Testing code: this works
-	// mat := newTrackingMat(3, 3)
-
-	// mat.set(0, 0, &Pix{color.White, 1, 1, nil})
-	// mat.set(0, 0, &Pix{color.White, 0, 0, nil})
-	// mat.set(1, 1, &Pix{color.White, 1, 1, nil})
-	// mat.set(2, 2, &Pix{color.White, 2, 2, nil})
-
-	// mat.iter(func(x, y int, p *Pix) {
-	// 	fmt.Println(x, y, p)
-	// })
-
-	// l := NewLine(0)
-	// l.add(mat.get(0, 0))
-
-	// mat.iter(func(x, y int, p *Pix) {
-	// 	fmt.Println(x, y, p)
-	// })
+	// saveShop()
 }

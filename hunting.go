@@ -1,18 +1,16 @@
 package main
 
-// -- Tracing
-// Create a line object
-// Add matching pixels
-// Reject bad pixels
-
-// For all neighbors in group
-// If pixel matches and has not been visited repeat chunking
-// If no more matches found add group to return and resume hunt
-
 // -- Modeling
 // Merge close lines
 // Determine a center
-// Note: this isnt going into this function, put it somewhere else
+// Determine a top
+
+/*
+TODO:
+	Clean pipeline
+	Test live
+	Hunting performance
+*/
 
 import (
 	"image"
@@ -21,44 +19,19 @@ import (
 	"github.com/lucasb-eyer/go-colorful"
 )
 
-// Note: a line that connects to a chunk should not be rejected
-func hunt(img image.Image, colors []color.Color, thresh float64, width int) []Line {
-	chanChunks := make(chan []Pix, 0)
-	chanLines := make(chan []Pix, 0)
-
-	defer close(chanChunks)
-	defer close(chanLines)
-
-	chunks := []Pix{}
-	lines := []Pix{}
-
-	for _, c := range colors {
-		go func(col color.Color) {
-			ch, li := getLines(img, col, thresh, width)
-
-			chanChunks <- ch
-			chanLines <- li
-		}(c)
-	}
-
-	done := 0
-	for done != len(colors) {
-		chunks = append(chunks, <-chanChunks...)
-		lines = append(lines, <-chanLines...)
-
-		done += 1
-	}
+func hunt(img image.Image, colors []color.Color, thresh float64, width int) ([]Pix, []*Line) {
+	chunks, lines := getLines(img, colors, thresh, width)
 
 	// Create a new tracking matrix containing all the points
 	mat := newTrackingMat(img.Bounds().Max.X, img.Bounds().Max.Y)
-
 	for _, p := range lines {
 		mat.setPix(p)
 	}
 
-	// Test to make sure the matrix we made is sane
-	// tester := outputMat(img.Bounds(), mat)
-	// go save(tester, "mat.png")
+	// Try masking lines with chunks
+	for _, p := range chunks {
+		mat.set(p.x, p.y, nil)
+	}
 
 	// Do we want to trace lines seperately?
 	raw := cluster(lines, mat)
@@ -66,30 +39,29 @@ func hunt(img image.Image, colors []color.Color, thresh float64, width int) []Li
 	// Filter out obvious non-outlines
 	filtered := filterLines(raw)
 
-	//
-	// Do some coloring and save the image for demo
-	p := output(img.Bounds(), chunks, filtered)
-	save(p, "huntress.png")
-
-	return nil
-}
-
-// Not screening for duplicates
-func aggregate(mat [][]Pix) (ret []Pix) {
-	for _, list := range mat {
-		ret = append(ret, list...)
-	}
-
-	return
+	return chunks, filtered
 }
 
 // Identifies lines in a picture that have a color within thresh distance of a color in col
 // Returns lines and chunks
-func getLines(img image.Image, target color.Color, thresh float64, width int) (chunkPixels []Pix, linePixels []Pix) {
+func getLines(img image.Image, colors []color.Color, thresh float64, width int) (chunkPixels []Pix, linePixels []Pix) {
 
 	iter(img, func(x, y int, c color.Color) {
-		// Measure color distance between this pixel and target colors
-		if distance := colorDistance(c, target); distance > thresh {
+		isClose := false
+		for _, target := range colors {
+			distance := colorDistance(c, target)
+
+			if distance <= thresh {
+				isClose = true
+				break
+
+				// Check to see if the color is even *close*. This saves all kinds of time when it comes to performance
+			} else if distance > 1.2 {
+				return
+			}
+		}
+
+		if !isClose {
 			return
 		}
 
@@ -167,21 +139,6 @@ func filterLines(lines []*Line) (ret []*Line) {
 	return
 }
 
-func filter(a []*Pix) (ret []*Pix) {
-	for _, p := range a {
-		if p != nil && p.line != nil {
-			ret = append(ret, p)
-		}
-	}
-
-	return
-}
-
-// Create a line from the given points
-func makeLine(points []Pix) (ret Line) {
-	return
-}
-
 // output an image for testing purposes
 func output(bounds image.Rectangle, chunks []Pix, lines []*Line) image.Image {
 	ret := image.NewNRGBA(bounds)
@@ -190,15 +147,18 @@ func output(bounds image.Rectangle, chunks []Pix, lines []*Line) image.Image {
 		ret.Set(x, y, color.Black)
 	})
 
-	// for _, p := range chunks {
-	// 	ret.Set(p.x, p.y, color.White)
-	// }
-
 	for _, line := range lines {
 		rcolor := colorful.FastHappyColor()
 
 		for _, pix := range line.pixels {
 			ret.Set(pix.x, pix.y, rcolor)
+		}
+	}
+
+	// Write out the chunks in white
+	if DEBUG_DRAW_CHUNKS {
+		for _, p := range chunks {
+			ret.Set(p.x, p.y, color.White)
 		}
 	}
 
@@ -244,15 +204,16 @@ func neighborPixels(tX, tY, distance int, i image.Image) (ret []Pix) {
 // Like neighbors, but does not return pixels that are nil or already marked
 func neighborsCluster(tX, tY, distance int, i *TrackingMat) (ret []*Pix) {
 	for x := tX - distance; x <= tX+distance; x++ {
-		if x < 0 || x > i.h {
+		if x < 0 || x >= i.w {
 			continue
 		}
 
 		for y := tY - distance; y <= tY+distance; y++ {
-			if y < 0 || y > i.w {
+			if y < 0 || y >= i.h {
 				continue
 			}
 
+			// fmt.Printf("%d, %d\t%d %d\n", x, y, i.w, i.h)
 			if p := i.get(x, y); p != nil && p.line == nil {
 				ret = append(ret, p)
 			}

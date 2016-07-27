@@ -1,11 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 
 	"github.com/disintegration/gift"
-	"github.com/lucasb-eyer/go-colorful"
 )
 
 // Modeling and detecting on-screen players
@@ -101,11 +101,11 @@ func colorDistance(a color.Color, b color.Color) float64 {
 
 func photoshop(i image.Image) image.Image {
 	g := gift.New(
-		gift.UnsharpMask(12.0, 30.0, 20.0),
-		gift.Contrast(30),
-		// gift.Hue(45),
-		// gift.Gamma(0.1),
-		// gift.Saturation(10),
+	// gift.Hue(45),
+	// gift.Contrast(1),
+	// gift.Saturation(2),
+	// gift.Gamma(0.75),
+	// gift.UnsharpMask(12.0, 30.0, 20.0),
 	)
 
 	// 2. Create a new image of the corresponding size.
@@ -129,81 +129,43 @@ func localmax(i image.Image) image.Image {
 	return dst
 }
 
-func sobel(i image.Image) image.Image {
-	g := gift.New(
-		// gift.Convolution( // emboss
-		// 	[]float32{
-		// 		-1, -1, 0,
-		// 		-1, 1, 1,
-		// 		0, 1, 1,
-		// 	},
-		// 	false, false, false, 0.0,
-		// ),
-		// gift.Convolution( // edge detection
-		// 	[]float32{
-		// 		-1, -1, -1,
-		// 		-1, 8, -1,
-		// 		-1, -1, -1,
-		// 	},
-		// 	false, false, false, 0.0,
-		// ),
-		gift.Sobel(),
-	)
+func loadSwatch() (result []color.Color) {
+	var ret []color.Color
 
-	// 2. Create a new image of the corresponding size.
-	// dst is a new target image, src is the original image
-	dst := image.NewGray(g.Bounds(i.Bounds()))
+	i := open("swatch.png")
 
-	g.Draw(dst, i)
-	return dst
-}
+	iter(i, func(x, y int, c color.Color) {
+		r, g, b, a := c.RGBA()
 
-func seperateHue(i image.Image) image.Image {
-	// Saturation looks very useful
-	// Hue... does not
-
-	return transformRGB(i, func(x int, y int, p color.Color) color.Color {
-		pix := p.(color.NRGBA)
-		c := colorful.Color{float64(pix.R) / 255.0, float64(pix.G) / 255.0, float64(pix.B) / 255.0}
-
-		_, h, _ := c.Hsv()
-		// h = h
-		return color.NRGBA{R: uint8(255 * h), G: uint8(255 * h), B: uint8(255 * h), A: 255}
-	})
-}
-
-func accentColorDifference(i image.Image) image.Image {
-	return transformRGB(i, func(x int, y int, c color.Color) color.Color {
-		distance := colorDistance(c, SEPERATION_TARGETCOLOR1)
-		return color.NRGBA{R: uint8(225 - 255*distance), G: uint8(225 - 255*distance), B: uint8(225 - 255*distance), A: 255}
-	})
-}
-
-func accentColorDiffereenceGreyscale(i image.Image, checkAgainst color.NRGBA, threshold float64) image.Image {
-	return transformGrey(i, func(x int, y int, c color.Color) color.Color {
-		if h := colorDistance(c, checkAgainst); h > threshold {
-			// fmt.Println(h)
-			return color.Gray{0}
-		} else {
-			// fmt.Println(h)
-			return color.Gray{uint8(255 - h*255)}
+		if a == 0 {
+			return
 		}
-	})
-}
 
-// This works, but its going to take some time to tweak the knobs
-func accentColorDiffereenceGreyscaleAggregate(i image.Image) image.Image {
-	return transformGrey(i, func(x int, y int, c color.Color) color.Color {
-		rgb := c.(color.NRGBA)
+		for _, c := range ret {
+			er, eg, eb, _ := c.RGBA()
 
-		d1 := colorDistance(rgb, SEPERATION_TARGETCOLOR1)
-		d2 := colorDistance(rgb, SEPERATION_TARGETCOLOR2)
-		d3 := colorDistance(rgb, SEPERATION_TARGETCOLOR3)
-
-		if h := (d1/3 + d2/3 + d3/3); h > SEPERATION_THRESHOLD {
-			return color.Gray{0}
-		} else {
-			return color.Gray{uint8(255 - h*255)}
+			if er == r && eg == g && eb == b {
+				return
+			}
 		}
+
+		ret = append(ret, c)
 	})
+
+	img := image.NewNRGBA(image.Rect(0, 0, 1, len(ret)))
+
+	for i, c := range ret {
+		r, g, b, a := c.RGBA()
+		img.SetNRGBA(0, i, color.NRGBA{uint8(r), uint8(g), uint8(b), uint8(a)})
+	}
+
+	ps := photoshop(img)
+
+	iter(ps, func(x, y int, c color.Color) {
+		result = append(result, c)
+	})
+
+	fmt.Printf("Loaded %d colors\n", len(ret))
+	save(ps, "edittedswatch.png")
+	return
 }
