@@ -8,6 +8,18 @@ import (
 	"github.com/lucasb-eyer/go-colorful"
 )
 
+// Modeling and detecting on-screen players
+type Line struct {
+	pixels []Pix
+	id     int
+	cX, cY int // center
+}
+
+type Pix struct {
+	color.Color
+	x, y int
+}
+
 // Here's some more info: http://stackoverflow.com/questions/29156091/opencv-edge-border-detection-based-on-color
 // Another silhouette detection: http://stackoverflow.com/questions/13586686/extract-external-contour-or-silhouette-of-image-in-python
 // Could be very useful: http://homepages.inf.ed.ac.uk/rbf/HIPR2/canny.htm

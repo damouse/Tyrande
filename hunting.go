@@ -17,22 +17,9 @@ package main
 import (
 	"image"
 	"image/color"
-	"math"
 
 	"github.com/lucasb-eyer/go-colorful"
 )
-
-// Modeling and detecting on-screen players
-type Line struct {
-	pixels []Pix
-	id     int
-	cX, cY int // center
-}
-
-type Pix struct {
-	color.Color
-	x, y int
-}
 
 // Note: a line that connects to a chunk should not be rejected
 func hunt(img image.Image, colors []color.Color, thresh float64, width int) []Line {
@@ -83,6 +70,7 @@ func aggregate(mat [][]Pix) (ret []Pix) {
 // Identifies lines in a picture that have a color within thresh distance of a color in col
 // Returns lines and chunks
 func getLines(img image.Image, target color.Color, thresh float64, width int) (chunkPixels []Pix, linePixels []Pix) {
+	mat := newTrackingMat(img.Bounds().Max, height)
 	iter(img, func(x, y int, c color.Color) {
 		// Measure color distance between this pixel and target colors
 		if distance := colorDistance(c, target); distance > thresh {
@@ -132,8 +120,7 @@ External:
 			// For every pixel
 			for _, pix := range line.pixels {
 
-				// If pixel is within 1 pixel of this pixel, add this pixel to that line
-				if math.Abs(float64(pix.x-p.x)) <= 2 && math.Abs(float64(pix.y-p.y)) <= 2 {
+				if euclideanDistance(p, pix) < 5 {
 					line.pixels = append(line.pixels, p)
 					continue External
 				}

@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"math"
 	"os"
 	"time"
 
@@ -82,4 +83,11 @@ func (m *TrackingMat) get(x, y int) uint8 {
 
 func (m *TrackingMat) set(x, y int, v uint8) {
 	m.arr[y*m.w+x] = v
+}
+
+func euclideanDistance(a Pix, b Pix) float64 {
+	dx := float64(a.x) - float64(b.x)
+	dy := float64(a.y) - float64(b.y)
+
+	return math.Sqrt(dx*dx + dy*dy)
 }
