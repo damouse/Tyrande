@@ -101,6 +101,7 @@ func hunt(img image.Image, colors []color.Color, thresh float64, width int) []Li
 
 	// Do some coloring
 	p := output(img.Bounds(), aggChunks, trueLines)
+
 	save(p, "huntress.png")
 
 	return nil
@@ -141,6 +142,7 @@ func cluster(points []Pix, groups int, iterations int) (ret []Line) {
 		}
 	}
 
+	fmt.Printf("Clustering completing with %d clusters\n", len(ret))
 	return
 }
 
@@ -158,8 +160,12 @@ func output(bounds image.Rectangle, chunks []Pix, lines []Line) image.Image {
 		ret.Set(x, y, color.Black)
 	})
 
+	// for _, p := range lines {
+	// 	ret.Set(p.x, p.y, color.NRGBA{255, 255, 255, 255})
+	// }
+
 	for _, p := range chunks {
-		ret.Set(p.x, p.y, color.NRGBA{255, 0, 0, 255})
+		ret.Set(p.x, p.y, color.NRGBA{100, 100, 100, 255})
 	}
 
 	for i, line := range lines {
@@ -202,7 +208,7 @@ func output(bounds image.Rectangle, chunks []Pix, lines []Line) image.Image {
 func getLines(img image.Image, target color.Color, thresh float64, width int) (chunkPixels []Pix, linePixels []Pix) {
 	iter(img, func(x, y int, c color.Color) {
 		// Measure color distance between this pixel and target colors
-		if distance := colorDistance(c, target); distance < thresh {
+		if distance := colorDistance(c, target); distance > thresh {
 			return
 		}
 
@@ -222,14 +228,14 @@ func getLines(img image.Image, target color.Color, thresh float64, width int) (c
 			// extend the chunking to each of the neighboring pixels
 			for _, p := range neighbors {
 				for _, nearby := range neighborPixels(p.x, p.y, width, img) {
-					if distance := colorDistance(nearby.Color, c); distance < thresh {
+					if distance := colorDistance(nearby.Color, c); distance > thresh {
 						return
 					}
 				}
 			}
 
 		} else {
-			chunkPixels = append(chunkPixels, Pix{c, x, y})
+			linePixels = append(linePixels, Pix{c, x, y})
 		}
 	})
 
