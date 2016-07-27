@@ -23,36 +23,44 @@ import (
 
 // Note: a line that connects to a chunk should not be rejected
 func hunt(img image.Image, colors []color.Color, thresh float64, width int) []Line {
-	chunks := make(chan []Pix, 0)
-	lines := make(chan []Pix, 0)
-	defer close(chunks)
-	defer close(lines)
+	chanChunks := make(chan []Pix, 0)
+	chanLines := make(chan []Pix, 0)
 
-	aggChunks := []Pix{}
-	aggLines := []Pix{}
+	defer close(chanChunks)
+	defer close(chanLines)
+
+	chunks := []Pix{}
+	lines := []Pix{}
 
 	for _, c := range colors {
 		go func(col color.Color) {
 			ch, li := getLines(img, col, thresh, width)
 
-			chunks <- ch
-			lines <- li
+			chanChunks <- ch
+			chanLines <- li
 		}(c)
 	}
 
 	done := 0
 	for done != len(colors) {
-		aggChunks = append(aggChunks, <-chunks...)
-		aggLines = append(aggLines, <-lines...)
+		chunks = append(chunks, <-chanChunks...)
+		lines = append(lines, <-chanLines...)
 
 		done += 1
 	}
 
+	// Create a new tracking matrix containing all the points
+	mat := newTrackingMat(img.Bounds().Max.X+2, img.Bounds().Max.Y+1)
+
+	for _, p := range lines {
+		mat.set(p.x, p.y, 1)
+	}
+
 	// Do we want to trace lines seperately?
-	trueLines := cluster(aggLines, 4, 50)
+	trueLines := cluster(lines, mat)
 
 	// Do some coloring
-	p := output(img.Bounds(), aggChunks, trueLines)
+	p := output(img.Bounds(), chunks, trueLines)
 	save(p, "huntress.png")
 
 	return nil
@@ -70,7 +78,7 @@ func aggregate(mat [][]Pix) (ret []Pix) {
 // Identifies lines in a picture that have a color within thresh distance of a color in col
 // Returns lines and chunks
 func getLines(img image.Image, target color.Color, thresh float64, width int) (chunkPixels []Pix, linePixels []Pix) {
-	mat := newTrackingMat(img.Bounds().Max, height)
+
 	iter(img, func(x, y int, c color.Color) {
 		// Measure color distance between this pixel and target colors
 		if distance := colorDistance(c, target); distance > thresh {
@@ -107,29 +115,8 @@ func getLines(img image.Image, target color.Color, thresh float64, width int) (c
 	return
 }
 
-func cluster(points []Pix, groups int, iterations int) (ret []Line) {
-External:
-	for _, p := range points {
-		// Check neighbors of this pixel for line membership
-		// If a neighbor match is found add this pixel to that line
-		// Else create new line and add this pixel
-
-		// For every line
-		for _, line := range ret {
-
-			// For every pixel
-			for _, pix := range line.pixels {
-
-				if euclideanDistance(p, pix) < 5 {
-					line.pixels = append(line.pixels, p)
-					continue External
-				}
-			}
-		}
-
-		// No matching neighbors found. Create a new line
-		ret = append(ret, Line{[]Pix{p}, len(ret), 0, 0})
-	}
+func cluster(points []Pix, mat *TrackingMat) (ret []Line) {
+	for 
 
 	return
 
