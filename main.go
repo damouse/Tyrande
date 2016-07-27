@@ -28,20 +28,25 @@ func runpipe() {
 	p.save()
 }
 
-func runOnce(colors []color.Color) {
-	p := open("lowsett.png")
+func runOnce(colors []color.Color, w *Window) {
+	// p := open("lowsett.png")
 
-	// Start benchmark
-	start := time.Now()
+	for {
+		p := open("lowsett.png")
+		// Start benchmark
+		start := time.Now()
 
-	chunks, lines := hunt(p, colors, COLOR_THRESHOLD, LINE_WIDTH)
+		chunks, lines := hunt(p, colors, COLOR_THRESHOLD, LINE_WIDTH)
 
-	// End benchmark
-	fmt.Printf("Bench: %s\n", time.Since(start))
+		// End benchmark
+		fmt.Printf("Hunt completed in: %s\n", time.Since(start))
 
-	p = output(p.Bounds(), chunks, lines)
-	save(p, "huntress.png")
+		p = output(p.Bounds(), chunks, lines)
 
+		w.show(p)
+	}
+
+	// save(p, "huntress.png")
 }
 
 func saveShop() {
@@ -63,7 +68,11 @@ func main() {
 		color.NRGBA{212, 128, 151, 255},
 	}
 
-	runOnce(swatch)
+	w := NewWindow()
+
+	go runOnce(swatch, w)
+
+	w.wait()
 
 	// saveShop()
 }

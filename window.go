@@ -3,11 +3,11 @@ package main
 import "C"
 import (
 	"image"
-	"image/color"
 	"os"
 	"path"
 	"runtime"
 
+	"github.com/disintegration/gift"
 	"github.com/lazywei/go-opencv/opencv"
 )
 
@@ -21,17 +21,15 @@ func NewWindow() *Window {
 }
 
 func (w *Window) show(i image.Image) {
-	s := 1
-	bigger := image.Rect(0, 0, i.Bounds().Max.X*s, i.Bounds().Max.X*s)
-	dst := image.NewNRGBA(bigger)
+	g := gift.New(
+		gift.Resize(i.Bounds().Max.X/2, i.Bounds().Max.Y/2, gift.LinearResampling),
+	)
 
-	iter(i, func(x, y int, c color.Color) {
-		for n := 0; n < s; n++ {
-			for j := 0; j < s; j++ {
-				dst.Set(x*s+n, y*s+j, c)
-			}
-		}
-	})
+	// 2. Create a new image of the corresponding size.
+	// dst is a new target image, src is the original image
+	dst := image.NewNRGBA(g.Bounds(i.Bounds()))
+
+	g.Draw(dst, i)
 
 	w.cvWindow.ShowImage(opencv.FromImage(dst))
 }
