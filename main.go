@@ -1,9 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"runtime"
+	"time"
+
+	"github.com/disintegration/gift"
 )
 
 func runpipe() {
@@ -12,59 +16,23 @@ func runpipe() {
 	p.save()
 }
 
-func testshop() {
-	// p := open("lowsett.png")
+func testshop(p image.Image) image.Image {
+	g := gift.New(
+		gift.Contrast(1),
+		gift.Gamma(.75),
+		gift.UnsharpMask(12.0, 30.0, 20.0),
+	)
 
-	// g := gift.New(
-	// 	gift.Contrast(1),
-	// 	gift.Gamma(.75),
-	// 	gift.ColorFunc(
-	// 		func(r0, g0, b0, a0 float32) (r, g, b, a float32) {
-	// 			r = r0 - (100.0 / 255.0) // invert the red channel
-	// 			g = g0 - (60.0 / 255.0)  // shift the green channel by 0.1
-	// 			b = b0                   // set the blue channel to 0
-	// 			a = a0                   // preserve the alpha channel
-	// 			return
-	// 		},
-	// 	),
-	// )
+	dst := image.NewNRGBA(g.Bounds(p.Bounds()))
+	g.Draw(dst, p)
 
-	// dst := image.NewNRGBA(g.Bounds(p.Bounds()))
-	// g.Draw(dst, p)
-	// go save(dst, "11.png")
+	// save(dst, "1.png")
 
-	// p = accentColorDiffereenceGreyscale(dst, color.NRGBA{188, 5, 18, 255}, 0.7)
-
-	dst := open("11.png")
-
-	b := dst.Bounds()
-	n := image.NewGray(b)
-
-	// For all pixels
-	for x := b.Min.X; x < b.Max.X; x++ {
-		for y := b.Min.Y; y < b.Max.Y; y++ {
-			c := dst.At(x, y)
-
-			// get similiarity between this and target colors
-			h := colorDistance(c, color.NRGBA{188, 5, 18, 255})
-
-			// If the color is not similar set to black and continue
-			if h > 0.8 {
-				n.SetGray(x, y, color.Gray{0})
-				continue
-			}
-
-			// For all neighboring pixels
-			// n.SetGray(x, y, color.Gray{uint8(255 - h*255)})
-		}
-	}
-
-	save(n, "12.png")
+	return dst
 }
 
-func testhunter() {
-	// fmt.Printf("NumCPU: %d\n", runtime.NumCPU())
-
+func runOnce() {
+	// for "lowsett.png"
 	allColors := []color.Color{
 		color.NRGBA{219, 18, 29, 255},
 		color.NRGBA{140, 31, 59, 255},
@@ -72,42 +40,31 @@ func testhunter() {
 		color.NRGBA{212, 128, 151, 255},
 	}
 
+	// for 0.png
+	// allColors := []color.Color{
+	// 	color.NRGBA{244, 88, 54, 255},
+	// 	color.NRGBA{177, 38, 48, 255},
+	// }
+
 	p := open("lowsett.png")
 
-	// w := NewWindow()
-	// w.show(p)
+	// Start benchmark
+	start := time.Now()
 
-	hunt(p, allColors, 0.2, 1)
+	// p = testshop(p)
 
-	// w.show(i)
-	// w.wait()
+	chunks, lines := hunt(p, allColors, 0.2, 1)
+
+	// End benchmark
+	fmt.Printf("Bench: %s\n", time.Since(start))
+
+	p = output(p.Bounds(), chunks, lines)
+	save(p, "huntress.png")
 
 }
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	// runpipe()
-	// testshop()
-
-	testhunter()
-
-	// Testing code: this works
-	// mat := newTrackingMat(3, 3)
-
-	// mat.set(0, 0, &Pix{color.White, 1, 1, nil})
-	// mat.set(0, 0, &Pix{color.White, 0, 0, nil})
-	// mat.set(1, 1, &Pix{color.White, 1, 1, nil})
-	// mat.set(2, 2, &Pix{color.White, 2, 2, nil})
-
-	// mat.iter(func(x, y int, p *Pix) {
-	// 	fmt.Println(x, y, p)
-	// })
-
-	// l := NewLine(0)
-	// l.add(mat.get(0, 0))
-
-	// mat.iter(func(x, y int, p *Pix) {
-	// 	fmt.Println(x, y, p)
-	// })
+	runOnce()
 }
