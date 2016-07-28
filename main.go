@@ -24,6 +24,7 @@ func convertSwatches() (ret []*Pix) {
 	for _, c := range TARGET_SWATCH {
 		ret = append(ret, NewPix(0, 0, c))
 	}
+
 	return
 }
 
@@ -31,41 +32,44 @@ func runOnce(colors []*Pix) {
 	// Load the image
 	p := open("lowsett.png")
 
-	// Line detection
+	// Benchmark
 	start := time.Now()
-	chunks, lines := hunt(p, colors, COLOR_THRESHOLD, LINE_WIDTH)
+
+	mat := convertImage(p)
+
+	lineify(mat, colors, COLOR_THRESHOLD, LINE_WIDTH)
+
 	fmt.Printf("Hunt completed in: %s\n", time.Since(start))
 
 	// Model detection
 
 	// Update movement logic
 
-	p = output(p.Bounds(), chunks, lines)
-	save(p, "huntress.png")
+	mat.save("matrix.png")
 }
 
-func runContinuously(colors []*Pix) {
-	w := NewWindow()
+// func runContinuously(colors []*Pix) {
+// 	w := NewWindow()
 
-	go func(win *Window) {
-		for {
-			p := open("lowsett.png")
-			// Start benchmark
-			start := time.Now()
+// 	go func(win *Window) {
+// 		for {
+// 			p := open("lowsett.png")
+// 			// Start benchmark
+// 			start := time.Now()
 
-			chunks, lines := hunt(p, colors, COLOR_THRESHOLD, LINE_WIDTH)
+// 			chunks, lines := hunt(p, colors, COLOR_THRESHOLD, LINE_WIDTH)
 
-			// End benchmark
-			fmt.Printf("Hunt completed in: %s\n", time.Since(start))
+// 			// End benchmark
+// 			fmt.Printf("Hunt completed in: %s\n", time.Since(start))
 
-			p = output(p.Bounds(), chunks, lines)
+// 			p = output(p.Bounds(), chunks, lines)
 
-			win.show(p)
-		}
-	}(w)
+// 			win.show(p)
+// 		}
+// 	}(w)
 
-	w.wait()
-}
+// 	w.wait()
+// }
 
 func saveShop() {
 	p := open("lowsett.png")

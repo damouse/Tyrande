@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/disintegration/gift"
-	"github.com/lucasb-eyer/go-colorful"
 )
 
 // Save this image inside the assets folder with the given name
@@ -30,32 +29,6 @@ func open(path string) image.Image {
 	checkError(err)
 
 	return img
-}
-
-// output an image for testing purposes
-func output(bounds image.Rectangle, chunks []Pix, lines []*Line) image.Image {
-	ret := image.NewNRGBA(bounds)
-
-	iter(ret, func(x, y int, c color.Color) {
-		ret.Set(x, y, color.Black)
-	})
-
-	for _, line := range lines {
-		rcolor := colorful.FastHappyColor()
-
-		for _, pix := range line.pixels {
-			ret.Set(pix.x, pix.y, rcolor)
-		}
-	}
-
-	// Write out the chunks in white
-	if DEBUG_DRAW_CHUNKS {
-		for _, p := range chunks {
-			ret.Set(p.x, p.y, color.White)
-		}
-	}
-
-	return ret
 }
 
 // Convert an image to a Pix matrix
@@ -80,27 +53,6 @@ func iter(i image.Image, fn func(x int, y int, pixel color.Color)) {
 			fn(x, y, i.At(x, y))
 		}
 	}
-}
-
-// transform TO rgb
-func transformRGB(i image.Image, fn func(int, int, color.Color) color.Color) image.Image {
-	b := i.Bounds()
-	n := image.NewNRGBA(b)
-
-	for y := b.Min.Y; y < b.Max.Y; y++ {
-		for x := b.Min.X; x < b.Max.X; x++ {
-			n.SetNRGBA(x, y, fn(x, y, i.At(x, y)).(color.NRGBA))
-		}
-	}
-
-	return n
-}
-
-//
-// Operations
-//
-func colorDistance(a color.Color, b color.Color) float64 {
-	return convertToColorful(a).DistanceLuv(convertToColorful(b))
 }
 
 func photoshop(i image.Image) image.Image {

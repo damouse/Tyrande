@@ -3,8 +3,6 @@ package main
 import (
 	"image"
 	"image/color"
-
-	"github.com/lucasb-eyer/go-colorful"
 )
 
 // Tracks the results of a GroupLines operation
@@ -62,26 +60,4 @@ func (m *TrackingMat) save(n string) {
 	})
 
 	save(ret, n)
-}
-
-// Float64 matrix
-type PixMat struct {
-	arr  []*colorful.Color
-	w, h int
-}
-
-func NewPixMat(width, height int) *PixMat {
-	return &PixMat{
-		arr: make([]*colorful.Color, width*height),
-		w:   width,
-		h:   height,
-	}
-}
-
-func (m *PixMat) get(x, y int) *colorful.Color {
-	return m.arr[y*m.w+x]
-}
-
-func (m *PixMat) set(x, y int, v *colorful.Color) {
-	m.arr[y*m.w+x] = v
 }

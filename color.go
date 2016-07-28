@@ -85,6 +85,6 @@ func convertToColorful(c color.Color) colorful.Color {
 	return colorful.Color{float64(r) / 65535.0, float64(g) / 65535.0, float64(b) / 65535.0}
 }
 
-func tyrDistance(a, b *Pix) float64 {
+func colorDistance(a, b *Pix) float64 {
 	return math.Sqrt(sq(a.r-b.r) + sq(a.g-b.g) + sq(a.b-b.b))
 }
