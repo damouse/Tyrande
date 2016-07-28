@@ -97,6 +97,29 @@ func (m *TrackingMat) iter(fn func(x int, y int, pixel *Pix)) {
 	}
 }
 
+// Float64 matrix
+type FloatMat struct {
+	arr  []*colorful.Color
+	w, h int
+}
+
+func newFloatMat(width, height int) *FloatMat {
+	return &FloatMat{
+		arr: make([]*colorful.Color, width*height),
+		w:   width,
+		h:   height,
+	}
+}
+
+func (m *FloatMat) get(x, y int) *colorful.Color {
+	return m.arr[y*m.w+x]
+}
+
+func (m *FloatMat) set(x, y int, v *colorful.Color) {
+	m.arr[y*m.w+x] = v
+}
+
+// Math utils
 func euclideanDistance(a Pix, b Pix) float64 {
 	dx := float64(a.x) - float64(b.x)
 	dy := float64(a.y) - float64(b.y)
