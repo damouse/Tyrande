@@ -147,6 +147,13 @@ func loadSwatch() (result []color.Color) {
 	return
 }
 
+var TARGET_SWATCH = []color.Color{
+	color.NRGBA{219, 18, 29, 255},
+	color.NRGBA{140, 31, 59, 255},
+	color.NRGBA{182, 40, 59, 255},
+	color.NRGBA{212, 128, 151, 255},
+}
+
 func convertSwatches() (ret []*Pix) {
 	for _, c := range TARGET_SWATCH {
 		ret = append(ret, NewPix(0, 0, c))

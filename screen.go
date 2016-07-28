@@ -17,6 +17,9 @@ func ScreenRect() (image.Rectangle, error) {
 	defer win.ReleaseDC(0, hDC)
 	x := win.GetDeviceCaps(hDC, win.HORZRES)
 	y := win.GetDeviceCaps(hDC, win.VERTRES)
+
+	fmt.Println(image.Rect(0, 0, int(x), int(y)))
+
 	return image.Rect(0, 0, int(x), int(y)), nil
 }
 
@@ -26,6 +29,11 @@ func CaptureScreen() (*image.NRGBA, error) {
 		return nil, e
 	}
 	return CaptureRect(r)
+}
+
+func CaptureLeft() image.Image {
+	i, _ := CaptureRect(image.Rect(0, 0, 2100, 1440))
+	return i
 }
 
 func CaptureRect(rect image.Rectangle) (*image.NRGBA, error) {

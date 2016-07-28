@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"image/color"
 	"runtime"
 	"sync"
 	"time"
@@ -15,30 +14,25 @@ var (
 	COLOR_THRESHOLD float64 = 0.2
 	LINE_WIDTH      int     = 1
 
-	DEBUG_DRAW_CHUNKS = false
-
-	TARGET_SWATCH = []color.Color{
-		color.NRGBA{219, 18, 29, 255},
-		color.NRGBA{140, 31, 59, 255},
-		color.NRGBA{182, 40, 59, 255},
-		color.NRGBA{212, 128, 151, 255},
-	}
+	DEBUG_DRAW_CHUNKS = false // draw the rejected color matches on the resulting debug image
+	CACHE_LUV         = true  // Cache luv processing
 
 	luvCache    = map[uint32]colorful.Color{}
 	linearMutex = &sync.RWMutex{}
-
-	// Cache luv processing
-	CACHE_LUV = false
 
 	CONVERTING_GOROUTINES = 8 // Number of concurrent workers for converting rgb -> LUV
 )
 
 func runOnce(colors []*Pix) {
 	// Load the image
-	p := open("lowsett.png")
+	// p := open("lowsett.png")
 
 	// Benchmark
 	start := time.Now()
+
+	// Grab the screen
+	p := CaptureLeft()
+	save(p, "cap.png")
 
 	mat := convertImage(p)
 
@@ -58,10 +52,11 @@ func runContinuously(colors []*Pix) {
 
 	go func(win *Window) {
 		for {
-			p := open("lowsett.png")
+			// p := open("lowsett.png")
 
 			// Benchmark
 			start := time.Now()
+			p := CaptureLeft()
 
 			mat := convertImage(p)
 
@@ -69,7 +64,7 @@ func runContinuously(colors []*Pix) {
 
 			fmt.Printf("Hunt completed in: %s\n", time.Since(start))
 
-			win.show(mat.toImage())
+			w.show(mat.toImage())
 		}
 	}(w)
 
@@ -77,6 +72,7 @@ func runContinuously(colors []*Pix) {
 }
 
 func main() {
+	fmt.Println("Tyrande starting")
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	// Until the perfromance issues are handled within getLines we cant handle all the swatch colors
@@ -84,8 +80,8 @@ func main() {
 
 	swatch := convertSwatches()
 
-	// runContinuously(swatch)
-	runOnce(swatch)
+	runContinuously(swatch)
+	// runOnce(swatch)
 
 	// sandbox()
 }
