@@ -39,6 +39,9 @@ func convertImage(i image.Image) *TrackingMat {
 	// This works, but is wildly not concurrent.
 	// Maybe move this to the screen processing area?
 
+	// In the end it may just be easier to write this in C. Here's an example
+	// http://stackoverflow.com/questions/6629798/whats-wrong-with-this-rgb-to-xyz-color-space-conversion-algorithm
+
 	// sliceX := b.Max.X / CONVERTING_GOROUTINES
 	// sliceY := b.Max.Y / CONVERTING_GOROUTINES
 
