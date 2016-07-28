@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"reflect"
 	"unsafe"
 
@@ -23,7 +24,7 @@ func ScreenRect() (image.Rectangle, error) {
 	return image.Rect(0, 0, int(x), int(y)), nil
 }
 
-func CaptureScreen() (*image.NRGBA, error) {
+func CaptureScreen() (*TrackingMat, error) {
 	r, e := ScreenRect()
 	if e != nil {
 		return nil, e
@@ -31,12 +32,12 @@ func CaptureScreen() (*image.NRGBA, error) {
 	return CaptureRect(r)
 }
 
-func CaptureLeft() image.Image {
+func CaptureLeft() *TrackingMat {
 	i, _ := CaptureRect(image.Rect(0, 0, 2100, 1440))
 	return i
 }
 
-func CaptureRect(rect image.Rectangle) (*image.NRGBA, error) {
+func CaptureRect(rect image.Rectangle) (*TrackingMat, error) {
 	hDC := win.GetDC(0)
 	if hDC == 0 {
 		return nil, fmt.Errorf("Could not Get primary display err:%d.\n", win.GetLastError())
@@ -73,12 +74,15 @@ func CaptureRect(rect image.Rectangle) (*image.NRGBA, error) {
 	defer win.DeleteObject(win.HGDIOBJ(m_hBmp))
 
 	obj := win.SelectObject(m_hDC, win.HGDIOBJ(m_hBmp))
+
 	if obj == 0 {
 		return nil, fmt.Errorf("error occurred and the selected object is not a region err:%d.\n", win.GetLastError())
 	}
+
 	if obj == 0xffffffff { //GDI_ERROR
 		return nil, fmt.Errorf("GDI_ERROR while calling SelectObject err:%d.\n", win.GetLastError())
 	}
+
 	defer win.DeleteObject(obj)
 
 	win.BitBlt(m_hDC, 0, 0, int32(x), int32(y), hDC, int32(rect.Min.X), int32(rect.Min.Y), win.SRCCOPY)
@@ -91,12 +95,16 @@ func CaptureRect(rect image.Rectangle) (*image.NRGBA, error) {
 
 	imageBytes := make([]byte, len(slice))
 
+	ret := newTrackingMat(x, y)
+
 	for i := 0; i < len(imageBytes); i += 4 {
-		imageBytes[i], imageBytes[i+2], imageBytes[i+1], imageBytes[i+3] = slice[i+2], slice[i], slice[i+1], slice[i+3]
+		// imageBytes[i], imageBytes[i+2], imageBytes[i+1], imageBytes[i+3] = slice[i+2], slice[i], slice[i+1], slice[i+3]
+		ret.set(0, 0, NewPix(0, 0, color.RGBA{uint8(slice[i+2]), uint8(slice[i]), uint8(slice[i+1]), uint8(slice[i+3])}))
 	}
 
-	img := &image.NRGBA{imageBytes, 4 * x, image.Rect(0, 0, x, y)}
-	return img, nil
+	// img := &image.NRGBA{imageBytes, 4 * x, image.Rect(0, 0, x, y)}
+	return ret, nil
+	// return img, nil
 }
 
 // Golang dx9 wrapper: https://github.com/gonutz/d3d9

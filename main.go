@@ -31,10 +31,10 @@ func runOnce(colors []*Pix) {
 	start := time.Now()
 
 	// Grab the screen
-	p := CaptureLeft()
-	save(p, "cap.png")
+	mat := CaptureLeft()
+	// save(p, "cap.png")
 
-	mat := convertImage(p)
+	// mat := convertImage(p)
 
 	lineify(mat, colors, COLOR_THRESHOLD, LINE_WIDTH)
 
@@ -56,9 +56,9 @@ func runContinuously(colors []*Pix) {
 
 			// Benchmark
 			start := time.Now()
-			p := CaptureLeft()
+			mat := CaptureLeft()
 
-			mat := convertImage(p)
+			// mat := convertImage(p)
 
 			lineify(mat, colors, COLOR_THRESHOLD, LINE_WIDTH)
 
