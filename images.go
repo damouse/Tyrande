@@ -58,18 +58,18 @@ func output(bounds image.Rectangle, chunks []Pix, lines []*Line) image.Image {
 	return ret
 }
 
-func outputMat(bounds image.Rectangle, mat *TrackingMat) image.Image {
-	ret := image.NewNRGBA(bounds)
+// Convert an image to a Pix matrix
+func convertImage(i image.Image) *TrackingMat {
+	b := i.Bounds()
+	mat := newTrackingMat(b.Max.X, b.Max.Y)
 
-	mat.iter(func(x, y int, c *Pix) {
-		if c == nil {
-			ret.Set(x, y, color.Black)
-		} else {
-			ret.Set(c.x, c.y, c.Color)
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			mat.set(x, y, NewPix(x, y, i.At(x, y)))
 		}
-	})
+	}
 
-	return ret
+	return mat
 }
 
 func iter(i image.Image, fn func(x int, y int, pixel color.Color)) {
@@ -94,11 +94,6 @@ func transformRGB(i image.Image, fn func(int, int, color.Color) color.Color) ima
 	}
 
 	return n
-}
-
-// Converts and image to LUV and drops it into a tracking matrix
-func convertLuv() {
-
 }
 
 //

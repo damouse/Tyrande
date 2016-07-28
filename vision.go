@@ -22,19 +22,51 @@ TODO:
 import (
 	"image"
 	"image/color"
-	"math"
-
-	"github.com/lucasb-eyer/go-colorful"
 )
 
 // Returns a slice of lines from a provided image
 func hunt(img image.Image, colors []*Pix, thresh float64, width int) ([]Pix, []*Line) {
 	// Convert the image to a more usable format
-	// pixMatrix := convertImage(img)
-	convertImage(img)
+	p := convertImage(img)
+
+	var pixChunks, pixLines []*Pix
+
+	for y := 0; y < p.h; y++ {
+		for x := 0; x < p.w; x++ {
+			// Get the pixel from the matrix
+			pix := p.get(x, y)
+
+			// Check if the pixel is close to any of the target colors
+			if !isClose(pix, colors, thresh) {
+				continue
+			}
+
+			// Get adjacent pixels
+			neighbors := neighborPix(x, y, width, p)
+
+			// Determine if this is the start of a chunk or a line. This thresh seems to do better higher
+			matches := scanChunkPix(neighbors, pix, 0.4)
+
+			// If all neighbors are matches then mark this as a chunk
+			if len(matches) == len(neighbors) {
+				pixChunks = append(pixChunks, markChunk(pix, p, neighbors, width, thresh)...)
+			} else {
+				// Else mark it as a line
+				pixLines = append(pixLines, pix)
+				pix.ptype = PIX_LINE
+			}
+		}
+	}
+
+	// Mask chunks
+	// for _, c := range pixChunks {
+	// 	c.ptype = PIX_CHUNK
+	// }
+
+	p.save("matrix.png")
 
 	// Extract lines and chunks
-	chunks, lines := extract(img, colors, thresh, width)
+	chunks, lines := extract(img, p, colors, thresh, width)
 
 	// Create a new tracking matrix containing all the points
 	mat := newTrackingMat(img.Bounds().Max.X, img.Bounds().Max.Y)
@@ -58,37 +90,10 @@ func hunt(img image.Image, colors []*Pix, thresh float64, width int) ([]Pix, []*
 
 // Identifies lines in a picture that have a color within thresh distance of a color in col
 // Returns lines and chunks
-func extract(img image.Image, colors []*Pix, thresh float64, width int) (chunkPixels []Pix, linePixels []Pix) {
-	// Can we just convert image and colors to LUV here once and then not bother with it again?
-
-	// output an image for testing purposes
-	loveImage := NewPixMat(img.Bounds().Max.X, img.Bounds().Max.Y)
+func extract(img image.Image, mat *TrackingMat, colors []*Pix, thresh float64, width int) (chunkPixels []Pix, linePixels []Pix) {
 
 	iter(img, func(x, y int, c color.Color) {
-		l1, u1, v1 := convertToColorful(c).Luv()
-		loveImage.set(x, y, &colorful.Color{l1, u1, v1})
-	})
-
-	iter(img, func(x, y int, c color.Color) {
-		isClose := false
-		for _, t := range colors {
-			// Testing manual conversion
-			c := loveImage.get(x, y)
-			man := math.Sqrt(sq(c.R-t.r) + sq(c.G-t.g) + sq(c.B-t.b))
-
-			distance := man
-
-			if distance <= thresh {
-				isClose = true
-				break
-
-				// Check to see if the color is even *close*. This saves all kinds of time when it comes to performance
-			} else if distance > 1.2 {
-				return
-			}
-		}
-
-		if !isClose {
+		if !isClose(mat.get(x, y), colors, thresh) {
 			return
 		}
 
@@ -120,6 +125,22 @@ func extract(img image.Image, colors []*Pix, thresh float64, width int) (chunkPi
 	})
 
 	return
+}
+
+func isClose(c *Pix, targets []*Pix, thresh float64) bool {
+	for _, t := range targets {
+		distance := tyrDistance(c, t)
+
+		if distance <= thresh {
+			return true
+
+			// Check to see if the color is even *close*. This saves all kinds of time when it comes to performance
+		} else if distance > 1.2 {
+			return false
+		}
+	}
+
+	return false
 }
 
 // Creates lines from pixels
@@ -216,6 +237,56 @@ func scanChunk(chunk []Pix, color color.Color, thresh float64) (ret []Pix) {
 	for _, p := range chunk {
 		if d := colorDistance(p, color); d < thresh {
 			ret = append(ret, p)
+		}
+	}
+
+	return
+}
+
+// returns all pixels within range d of target coordinates x, y
+// The pixel in the middle is included in results
+func neighborPix(tX, tY, distance int, m *TrackingMat) (ret []*Pix) {
+	for x := tX - distance; x <= tX+distance; x++ {
+		if x < 0 || x > m.w {
+			continue
+		}
+
+		for y := tY - distance; y <= tY+distance; y++ {
+			if y < 0 || y > m.h {
+				continue
+			}
+
+			ret = append(ret, m.get(x, y))
+		}
+	}
+
+	return
+}
+
+// Return matching pixels from chunk that are within thresh of the given color
+func scanChunkPix(chunk []*Pix, target *Pix, thresh float64) (ret []*Pix) {
+	for _, p := range chunk {
+		if d := tyrDistance(p, target); d < thresh {
+			ret = append(ret, p)
+		}
+	}
+
+	return
+}
+
+// Mark chunk pixels in the matrix
+func markChunk(c *Pix, m *TrackingMat, neighbors []*Pix, width int, thresh float64) (chunkPixels []*Pix) {
+	for _, p := range neighbors {
+		chunkPixels = append(chunkPixels, p)
+		p.ptype = PIX_CHUNK
+	}
+
+	// extend the chunking to each of the neighboring pixels
+	for _, p := range neighbors {
+		for _, nearby := range neighborPix(p.x, p.y, width, m) {
+			if distance := tyrDistance(nearby, c); distance > thresh {
+				return
+			}
 		}
 	}
 

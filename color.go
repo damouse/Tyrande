@@ -3,9 +3,18 @@ package main
 import (
 	"image"
 	"image/color"
+	"math"
 
 	"github.com/lazywei/go-opencv/opencv"
 	"github.com/lucasb-eyer/go-colorful"
+)
+
+type ptype int
+
+const (
+	PIX_NOTHING ptype = iota
+	PIX_CHUNK
+	PIX_LINE
 )
 
 // Modeling and detecting on-screen players
@@ -18,8 +27,9 @@ type Line struct {
 type Pix struct {
 	color.Color
 	x, y    int
-	r, g, b float64
+	r, g, b float64 // these are also l, u, v
 	line    *Line
+	ptype   // Algos may mark this this pixel as needed
 }
 
 func NewPix(x, y int, c color.Color) *Pix {
@@ -33,21 +43,8 @@ func NewPix(x, y int, c color.Color) *Pix {
 		u,
 		v,
 		nil,
+		PIX_NOTHING,
 	}
-}
-
-// Convert an image to a Pix matrix
-func convertImage(i image.Image) *TrackingMat {
-	b := i.Bounds()
-	mat := newTrackingMat(b.Max.Y, b.Max.X)
-
-	for y := b.Min.Y; y < b.Max.Y; y++ {
-		for x := b.Min.X; x < b.Max.X; x++ {
-			mat.set(x, y, NewPix(x, y, i.At(x, y)))
-		}
-	}
-
-	return mat
 }
 
 func (l *Line) add(p *Pix) {
@@ -86,4 +83,8 @@ func convertCv(i *opencv.IplImage) image.Image {
 func convertToColorful(c color.Color) colorful.Color {
 	r, g, b, _ := c.RGBA()
 	return colorful.Color{float64(r) / 65535.0, float64(g) / 65535.0, float64(b) / 65535.0}
+}
+
+func tyrDistance(a, b *Pix) float64 {
+	return math.Sqrt(sq(a.r-b.r) + sq(a.g-b.g) + sq(a.b-b.b))
 }

@@ -1,6 +1,11 @@
 package main
 
-import "github.com/lucasb-eyer/go-colorful"
+import (
+	"image"
+	"image/color"
+
+	"github.com/lucasb-eyer/go-colorful"
+)
 
 // Tracks the results of a GroupLines operation
 // 0 is univisited, 1 is rejected, 2 is line
@@ -35,6 +40,29 @@ func (m *TrackingMat) iter(fn func(x int, y int, pixel *Pix)) {
 			fn(x, y, m.get(x, y))
 		}
 	}
+}
+
+func (m *TrackingMat) save(n string) {
+	ret := image.NewNRGBA(image.Rect(0, 0, m.w, m.h))
+
+	m.iter(func(x, y int, p *Pix) {
+		if p == nil {
+			ret.Set(x, y, color.Black)
+
+		} else if DEBUG_DRAW_CHUNKS && p.ptype == PIX_CHUNK {
+			ret.Set(x, y, color.White)
+
+		} else if p.ptype == PIX_LINE {
+			ret.Set(x, y, color.RGBA{255, 0, 0, 255})
+
+		} else {
+			// ret.Set(x, y, p.Color)
+			r, g, b, _ := p.Color.RGBA()
+			ret.Set(x, y, color.RGBA{uint8(float64(r) / 65535.0 * 25), uint8(float64(g) / 65535.0 * 25), uint8(float64(b) / 65535.0 * 25), 255})
+		}
+	})
+
+	save(ret, n)
 }
 
 // Float64 matrix
