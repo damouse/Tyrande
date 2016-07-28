@@ -156,32 +156,36 @@ func markChunk(c *Pix, m *TrackingMat, neighbor []*Pix, width int, thresh float6
 
 // Creates lines from pixels
 func cluster(mat *TrackingMat) (ret []*Line) {
-	mat.iter(func(x, y int, pix *Pix) {
-		// Ignore non-line pixels or already added pixels
-		if pix == nil || pix.ptype != PIX_LINE || pix.line != nil {
-			return
-		}
+	for y := 0; y < mat.h; y++ {
+		for x := 0; x < mat.w; x++ {
+			pix := mat.get(x, y)
 
-		q := []*Pix{pix}
-		line := NewLine(0)
-		ret = append(ret, line)
-
-		for len(q) > 0 {
-			next := q[0]
-			q = q[1:]
-
-			// continue if next is marked
-			if next.line != nil {
-				continue
+			// Ignore non-line pixels or already added pixels
+			if pix == nil || pix.ptype != PIX_LINE || pix.line != nil {
+				return
 			}
 
-			// Add next
-			line.add(next)
+			q := []*Pix{pix}
+			line := NewLine(0)
+			ret = append(ret, line)
 
-			// Queue neighbors
-			q = append(q, neighborsCluster(next.x, next.y, 1, mat)...)
+			for len(q) > 0 {
+				next := q[0]
+				q = q[1:]
+
+				// continue if next is marked
+				if next.line != nil {
+					continue
+				}
+
+				// Add next
+				line.add(next)
+
+				// Queue neighbors
+				q = append(q, neighborsCluster(next.x, next.y, 1, mat)...)
+			}
 		}
-	})
+	}
 
 	return
 }

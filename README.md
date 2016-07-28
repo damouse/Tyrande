@@ -27,11 +27,6 @@ Run profiling command:
 
 ```
 go test -run=^$ -bench=. -cpuprofile=cpu.out
-```
-
-Examine output:
-
-```
 go tool pprof tyrande.test.exe cpu.out
 ```
 

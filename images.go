@@ -112,3 +112,11 @@ func loadSwatch() (result []color.Color) {
 	save(ps, "edittedswatch.png")
 	return
 }
+
+func convertSwatches() (ret []*Pix) {
+	for _, c := range TARGET_SWATCH {
+		ret = append(ret, NewPix(0, 0, c))
+	}
+
+	return
+}

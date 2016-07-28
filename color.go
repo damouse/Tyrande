@@ -32,8 +32,30 @@ type Pix struct {
 	ptype   // Algos may mark this this pixel as needed
 }
 
+func slide(c color.Color) uint32 {
+	r, g, b, _ := c.RGBA()
+	return (r << 16) | (g << 8) | b
+}
+
+//
+// Pix
 func NewPix(x, y int, c color.Color) *Pix {
-	l, u, v := convertToColorful(c).Luv()
+	var l, u, v float64
+
+	if CACHE_LUV {
+		i := slide(c)
+
+		if r, ok := luvCache[i]; ok {
+			l = r.R
+			u = r.G
+			v = r.B
+		} else {
+			l, u, v = convertToColorful(c).Luv()
+			luvCache[i] = colorful.Color{l, u, v}
+		}
+	} else {
+		l, u, v = convertToColorful(c).Luv()
+	}
 
 	return &Pix{
 		c,
@@ -44,6 +66,17 @@ func NewPix(x, y int, c color.Color) *Pix {
 		v,
 		nil,
 		PIX_NOTHING,
+	}
+}
+
+//
+// Line
+func NewLine(id int) *Line {
+	return &Line{
+		[]*Pix{},
+		id,
+		0,
+		0,
 	}
 }
 
@@ -67,15 +100,8 @@ func (l *Line) merge(o *Line) {
 	}
 }
 
-func NewLine(id int) *Line {
-	return &Line{
-		[]*Pix{},
-		id,
-		0,
-		0,
-	}
-}
-
+//
+// Misc color
 func convertCv(i *opencv.IplImage) image.Image {
 	return i.ToImage()
 }
@@ -88,3 +114,24 @@ func convertToColorful(c color.Color) colorful.Color {
 func colorDistance(a, b *Pix) float64 {
 	return math.Sqrt(sq(a.r-b.r) + sq(a.g-b.g) + sq(a.b-b.b))
 }
+
+//
+// Manual LUV Lookup
+// func Luv(l, u, v float64) Color {
+// 	return Xyz(LuvToXyz(l, u, v))
+// }
+
+// func LuvToXyz(l, u, v float64) (x, y, z float64) {
+// 	// D65 white (see above).
+// 	return LuvToXyzWhiteRef(l, u, v, D65)
+// }
+
+// func Xyz(x, y, z float64) Color {
+// 	return LinearRgb(XyzToLinearRgb(x, y, z))
+// 	// return FastLinearRgb(XyzToLinearRgb(x, y, z))
+// }
+
+// func LinearRgb(r, g, b float64) Color {
+// 	// return FastLinearRgb(r, g, b)
+// 	return Color{delinearize(r), delinearize(g), delinearize(b)}
+// }

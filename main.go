@@ -3,9 +3,13 @@ package main
 import (
 	"fmt"
 	"image/color"
+	"sync"
 	"time"
+
+	"github.com/lucasb-eyer/go-colorful"
 )
 
+// Global running settings
 var (
 	COLOR_THRESHOLD float64 = 0.2
 	LINE_WIDTH      int     = 1
@@ -18,15 +22,12 @@ var (
 		color.NRGBA{182, 40, 59, 255},
 		color.NRGBA{212, 128, 151, 255},
 	}
+
+	luvCache    = map[uint32]colorful.Color{}
+	linearMutex = &sync.RWMutex{}
+
+	CACHE_LUV = false
 )
-
-func convertSwatches() (ret []*Pix) {
-	for _, c := range TARGET_SWATCH {
-		ret = append(ret, NewPix(0, 0, c))
-	}
-
-	return
-}
 
 func runOnce(colors []*Pix) {
 	// Load the image
@@ -45,43 +46,33 @@ func runOnce(colors []*Pix) {
 
 	// Update movement logic
 
-	mat.save("matrix.png")
+	mat.save("huntress.png")
 }
 
-// func runContinuously(colors []*Pix) {
-// 	w := NewWindow()
+func runContinuously(colors []*Pix) {
+	w := NewWindow()
 
-// 	go func(win *Window) {
-// 		for {
-// 			p := open("lowsett.png")
-// 			// Start benchmark
-// 			start := time.Now()
+	go func(win *Window) {
+		for {
+			p := open("lowsett.png")
 
-// 			chunks, lines := hunt(p, colors, COLOR_THRESHOLD, LINE_WIDTH)
+			// Benchmark
+			start := time.Now()
 
-// 			// End benchmark
-// 			fmt.Printf("Hunt completed in: %s\n", time.Since(start))
+			mat := convertImage(p)
 
-// 			p = output(p.Bounds(), chunks, lines)
+			lineify(mat, colors, COLOR_THRESHOLD, LINE_WIDTH)
 
-// 			win.show(p)
-// 		}
-// 	}(w)
+			fmt.Printf("Hunt completed in: %s\n", time.Since(start))
 
-// 	w.wait()
-// }
+			win.show(mat.toImage())
+		}
+	}(w)
 
-func saveShop() {
-	p := open("lowsett.png")
-	p = photoshop(p)
-	save(p, "1.png")
+	w.wait()
 }
 
 func main() {
-	// s := NewSentinal()
-	// s.hunt()
-	// s.wait()
-
 	// Until the perfromance issues are handled within getLines we cant handle all the swatch colors
 	// swatch := loadSwatch()
 
@@ -89,4 +80,25 @@ func main() {
 
 	// runContinuously(swatch)
 	runOnce(swatch)
+
+	// sandbox()
+}
+
+func sandbox() {
+	fmt.Println("Hello")
+
+	red := color.RGBA{0, 0, 0, 255}
+
+	r, g, b, _ := red.RGBA()
+
+	// fmt.Printf("%#x %#x %#x\n", r, g+256, b)
+
+	// fmt.Printf("%#x %#x %#x\n", red.R, red.G, red.B)
+
+	// all := r + g + 256 + b + 65536
+	// fmt.Printf("%#x\n", all)
+
+	final := (r << 16) | (g << 8) | b
+
+	fmt.Printf("%#x\n", final)
 }

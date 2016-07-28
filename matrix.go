@@ -41,6 +41,10 @@ func (m *TrackingMat) iter(fn func(x int, y int, pixel *Pix)) {
 }
 
 func (m *TrackingMat) save(n string) {
+	save(m.toImage(), n)
+}
+
+func (m *TrackingMat) toImage() image.Image {
 	ret := image.NewNRGBA(image.Rect(0, 0, m.w, m.h))
 
 	m.iter(func(x, y int, p *Pix) {
@@ -59,5 +63,5 @@ func (m *TrackingMat) save(n string) {
 		}
 	})
 
-	save(ret, n)
+	return ret
 }
