@@ -66,48 +66,28 @@ func lineifyExperimental(p *TrackingMat, colors []*Pix, thresh float64, width in
 			// Get the pixel from the matrix
 			pix := p.get(x, y)
 
-			// something already visited this pixel
-			if pix.ptype != PIX_NOTHING {
-				continue
-			}
+			// This pixel has been visited by something or another
+			// if pix.ptype == PIX_NOTHING {
+			// 	continue
+			// }
 
 			// Colors dont match
 			if !isClose(pix, colors, thresh) {
 				continue
 			}
 
-			// go will shuffle memory too when adding/removing items from q
-			q := []*Pix{pix}
-
-			for len(q) > 0 {
-
-				// shift the q
-				op := q[0]
-				q = q[1:]
-
-				if op.ptype == PIX_CHUNK {
-					continue
-				}
-
-				op.ptype = PIX_CHUNK
-
-				for _, mod := range mods {
-					newx := op.x + mod.x
-					newy := op.y + mod.y
-
-					if 0 <= newy && newy < p.h && 0 <= newx && newx < p.w {
-						next := p.get(newx, newy)
-
-						if !isClose(op, colors, thresh) {
-							q = append(q, next)
-						}
-					}
-				}
-			}
+			chunkFill(pix, p, 0.4)
 		}
 	}
 
+	// Cluster line pixels into lines
+	// rawLines := trace(pixLines, p)
+	// fmt.Println("Returning lines: ", len(rawLines))
 	return nil
+
+	// Scrub out lines that are most likely not lines
+	// outlines := filterLines(rawLines)
+	// return outlines
 }
 
 func isClose(c *Pix, targets []*Pix, thresh float64) bool {

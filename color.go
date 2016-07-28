@@ -33,6 +33,8 @@ type Pix struct {
 
 	line  *Line // line this pixel belongs to
 	ptype       // A marker that vision may set as needed
+
+	lazyInit bool // true if luv has been calculated, else false
 }
 
 func slide(c color.Color) uint32 {
@@ -45,20 +47,20 @@ func slide(c color.Color) uint32 {
 func NewPix(x, y int, c color.Color) *Pix {
 	var l, u, v float64
 
-	if CACHE_LUV {
-		i := slide(c)
+	// if CACHE_LUV {
+	// 	i := slide(c)
 
-		if r, ok := luvCache[i]; ok {
-			l = r.R
-			u = r.G
-			v = r.B
-		} else {
-			l, u, v = convertToColorful(c).Luv()
-			luvCache[i] = colorful.Color{l, u, v}
-		}
-	} else {
-		l, u, v = convertToColorful(c).Luv()
-	}
+	// 	if r, ok := luvCache[i]; ok {
+	// 		l = r.R
+	// 		u = r.G
+	// 		v = r.B
+	// 	} else {
+	// 		l, u, v = convertToColorful(c).Luv()
+	// 		luvCache[i] = colorful.Color{l, u, v}
+	// 	}
+	// } else {
+	// 	l, u, v = convertToColorful(c).Luv()
+	// }
 
 	return &Pix{
 		c,
@@ -69,7 +71,38 @@ func NewPix(x, y int, c color.Color) *Pix {
 		v,
 		nil,
 		PIX_NOTHING,
+		false,
 	}
+}
+
+// Trigger the lazy initializer for this pixels luv color
+func (p *Pix) initLuv() {
+	var l, u, v float64
+
+	if p.lazyInit {
+		return
+	}
+
+	if CACHE_LUV {
+		i := slide(p.Color)
+
+		if r, ok := luvCache[i]; ok {
+			l = r.R
+			u = r.G
+			v = r.B
+		} else {
+			l, u, v = convertToColorful(p.Color).Luv()
+			luvCache[i] = colorful.Color{l, u, v}
+		}
+	} else {
+		l, u, v = convertToColorful(p.Color).Luv()
+	}
+
+	p.r = l
+	p.g = u
+	p.b = v
+
+	p.lazyInit = true
 }
 
 //
@@ -115,9 +148,11 @@ func convertToColorful(c color.Color) colorful.Color {
 }
 
 func colorDistance(a, b *Pix) float64 {
-	if a == nil || b == nil {
-		return 1.5
-	}
+	a.initLuv()
+	b.initLuv()
+	// if a == nil || b == nil {
+	// 	return 1.5
+	// }
 
 	return math.Sqrt(sq(a.r-b.r) + sq(a.g-b.g) + sq(a.b-b.b))
 }
