@@ -30,6 +30,8 @@ import (
 // Returns a slice of lines from a provided image
 func hunt(img image.Image, colors []color.Color, thresh float64, width int) ([]Pix, []*Line) {
 	// Convert the image to a more usable format
+	// pixMatrix := convertImage(img)
+	convertImage(img)
 
 	// Extract lines and chunks
 	chunks, lines := extract(img, colors, thresh, width)
@@ -60,7 +62,7 @@ func extract(img image.Image, colors []color.Color, thresh float64, width int) (
 	// Can we just convert image and colors to LUV here once and then not bother with it again?
 
 	// output an image for testing purposes
-	loveImage := newFloatMat(img.Bounds().Max.X, img.Bounds().Max.Y)
+	loveImage := NewPixMat(img.Bounds().Max.X, img.Bounds().Max.Y)
 
 	iter(img, func(x, y int, c color.Color) {
 		l1, u1, v1 := convertToColorful(c).Luv()
@@ -136,7 +138,7 @@ func extract(img image.Image, colors []color.Color, thresh float64, width int) (
 			}
 
 		} else {
-			linePixels = append(linePixels, Pix{c, x, y, nil})
+			linePixels = append(linePixels, *NewPix(x, y, c))
 		}
 	})
 
@@ -203,7 +205,7 @@ func neighborPixels(tX, tY, distance int, i image.Image) (ret []Pix) {
 				continue
 			}
 
-			ret = append(ret, Pix{i.At(x, y), x, y, nil})
+			ret = append(ret, *NewPix(x, y, i.At(x, y)))
 		}
 	}
 
@@ -241,46 +243,4 @@ func scanChunk(chunk []Pix, color color.Color, thresh float64) (ret []Pix) {
 	}
 
 	return
-}
-
-// Modeling and detecting on-screen players
-type Line struct {
-	pixels []*Pix
-	id     int
-	cX, cY int // center
-}
-
-type Pix struct {
-	color.Color
-	x, y int
-	line *Line
-}
-
-func (l *Line) add(p *Pix) {
-	if p.line == nil {
-		l.pixels = append(l.pixels, p)
-		p.line = l
-	}
-}
-
-func (l *Line) addAll(p []*Pix) {
-	for _, a := range p {
-		l.add(a)
-	}
-}
-
-func (l *Line) merge(o *Line) {
-	for _, p := range o.pixels {
-		p.line = nil
-		l.add(p)
-	}
-}
-
-func NewLine(id int) *Line {
-	return &Line{
-		[]*Pix{},
-		id,
-		0,
-		0,
-	}
 }

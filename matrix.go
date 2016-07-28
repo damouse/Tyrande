@@ -38,23 +38,23 @@ func (m *TrackingMat) iter(fn func(x int, y int, pixel *Pix)) {
 }
 
 // Float64 matrix
-type FloatMat struct {
+type PixMat struct {
 	arr  []*colorful.Color
 	w, h int
 }
 
-func newFloatMat(width, height int) *FloatMat {
-	return &FloatMat{
+func NewPixMat(width, height int) *PixMat {
+	return &PixMat{
 		arr: make([]*colorful.Color, width*height),
 		w:   width,
 		h:   height,
 	}
 }
 
-func (m *FloatMat) get(x, y int) *colorful.Color {
+func (m *PixMat) get(x, y int) *colorful.Color {
 	return m.arr[y*m.w+x]
 }
 
-func (m *FloatMat) set(x, y int, v *colorful.Color) {
+func (m *PixMat) set(x, y int, v *colorful.Color) {
 	m.arr[y*m.w+x] = v
 }
