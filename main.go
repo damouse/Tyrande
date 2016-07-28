@@ -10,7 +10,7 @@ var (
 	COLOR_THRESHOLD float64 = 0.2
 	LINE_WIDTH      int     = 1
 
-	DEBUG_DRAW_CHUNKS = true
+	DEBUG_DRAW_CHUNKS = false
 
 	TARGET_SWATCH = []color.Color{
 		color.NRGBA{219, 18, 29, 255},

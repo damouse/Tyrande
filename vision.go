@@ -22,6 +22,8 @@ TODO:
 import (
 	"image"
 	"image/color"
+
+	"github.com/lucasb-eyer/go-colorful"
 )
 
 // Returns a slice of lines from a provided image
@@ -50,6 +52,7 @@ func hunt(img image.Image, colors []*Pix, thresh float64, width int) ([]Pix, []*
 			// If all neighbors are matches then mark this as a chunk
 			if len(matches) == len(neighbors) {
 				pixChunks = append(pixChunks, markChunk(pix, p, neighbors, width, thresh)...)
+
 			} else {
 				// Else mark it as a line
 				pixLines = append(pixLines, pix)
@@ -58,10 +61,18 @@ func hunt(img image.Image, colors []*Pix, thresh float64, width int) ([]Pix, []*
 		}
 	}
 
-	// Mask chunks
-	// for _, c := range pixChunks {
-	// 	c.ptype = PIX_CHUNK
-	// }
+	rawLines := clusterPix(p)
+
+	finalLines := filterLines(rawLines)
+
+	// Color lines for debug output
+	for _, l := range finalLines {
+		rcolor := colorful.FastHappyColor()
+
+		for _, a := range l.pixels {
+			a.Color = rcolor
+		}
+	}
 
 	p.save("matrix.png")
 
@@ -179,6 +190,10 @@ func cluster(points []Pix, mat *TrackingMat) (ret []*Line) {
 func filterLines(lines []*Line) (ret []*Line) {
 	for _, l := range lines {
 		if len(l.pixels) < 100 {
+			for _, p := range l.pixels {
+				p.ptype = PIX_CHUNK
+			}
+
 			continue
 		}
 
@@ -224,6 +239,28 @@ func neighborsCluster(tX, tY, distance int, i *TrackingMat) (ret []*Pix) {
 
 			// fmt.Printf("%d, %d\t%d %d\n", x, y, i.w, i.h)
 			if p := i.get(x, y); p != nil && p.line == nil {
+				ret = append(ret, p)
+			}
+		}
+	}
+
+	return
+}
+
+// Like neighbors, but does not return pixels that are nil or already marked
+func neighborsClusterPix(tX, tY, distance int, i *TrackingMat) (ret []*Pix) {
+	for x := tX - distance; x <= tX+distance; x++ {
+		if x < 0 || x >= i.w {
+			continue
+		}
+
+		for y := tY - distance; y <= tY+distance; y++ {
+			if y < 0 || y >= i.h {
+				continue
+			}
+
+			// fmt.Printf("%d, %d\t%d %d\n", x, y, i.w, i.h)
+			if p := i.get(x, y); p != nil && p.ptype == PIX_LINE && p.line == nil {
 				ret = append(ret, p)
 			}
 		}
@@ -289,6 +326,38 @@ func markChunk(c *Pix, m *TrackingMat, neighbors []*Pix, width int, thresh float
 			}
 		}
 	}
+
+	return
+}
+
+// Creates lines from pixels
+func clusterPix(mat *TrackingMat) (ret []*Line) {
+	mat.iter(func(x, y int, pix *Pix) {
+		// Ignore non-line pixels or already added pixels
+		if pix == nil || pix.ptype != PIX_LINE || pix.line != nil {
+			return
+		}
+
+		q := []*Pix{pix}
+		line := NewLine(0)
+		ret = append(ret, line)
+
+		for len(q) > 0 {
+			next := q[0]
+			q = q[1:]
+
+			// continue if next is marked
+			if next.line != nil {
+				continue
+			}
+
+			// Add next
+			line.add(next)
+
+			// Queue neighbors
+			q = append(q, neighborsClusterPix(next.x, next.y, 1, mat)...)
+		}
+	})
 
 	return
 }
