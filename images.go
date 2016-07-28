@@ -4,55 +4,73 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"image/png"
+	"os"
 
 	"github.com/disintegration/gift"
+	"github.com/lucasb-eyer/go-colorful"
 )
 
-// Modeling and detecting on-screen players
-type Line struct {
-	pixels []*Pix
-	id     int
-	cX, cY int // center
+// Save this image inside the assets folder with the given name
+func save(img image.Image, name string) {
+	f, err := os.Create("./assets/" + name)
+	checkError(err)
+	defer f.Close()
+
+	err = png.Encode(f, img)
+	checkError(err)
 }
 
-func (l *Line) add(p *Pix) {
-	if p.line == nil {
-		l.pixels = append(l.pixels, p)
-		p.line = l
+func open(path string) image.Image {
+	f, err := os.Open("./assets/" + path)
+	checkError(err)
+	defer f.Close()
+
+	img, err := png.Decode(f)
+	checkError(err)
+
+	return img
+}
+
+// output an image for testing purposes
+func output(bounds image.Rectangle, chunks []Pix, lines []*Line) image.Image {
+	ret := image.NewNRGBA(bounds)
+
+	iter(ret, func(x, y int, c color.Color) {
+		ret.Set(x, y, color.Black)
+	})
+
+	for _, line := range lines {
+		rcolor := colorful.FastHappyColor()
+
+		for _, pix := range line.pixels {
+			ret.Set(pix.x, pix.y, rcolor)
+		}
 	}
-}
 
-func (l *Line) addAll(p []*Pix) {
-	for _, a := range p {
-		l.add(a)
+	// Write out the chunks in white
+	if DEBUG_DRAW_CHUNKS {
+		for _, p := range chunks {
+			ret.Set(p.x, p.y, color.White)
+		}
 	}
+
+	return ret
 }
 
-func (l *Line) merge(o *Line) {
-	for _, p := range o.pixels {
-		p.line = nil
-		l.add(p)
-	}
-}
+func outputMat(bounds image.Rectangle, mat *TrackingMat) image.Image {
+	ret := image.NewNRGBA(bounds)
 
-func NewLine(id int) *Line {
-	return &Line{
-		[]*Pix{},
-		id,
-		0,
-		0,
-	}
-}
+	mat.iter(func(x, y int, c *Pix) {
+		if c == nil {
+			ret.Set(x, y, color.Black)
+		} else {
+			ret.Set(c.x, c.y, c.Color)
+		}
+	})
 
-type Pix struct {
-	color.Color
-	x, y int
-	line *Line
+	return ret
 }
-
-// Here's some more info: http://stackoverflow.com/questions/29156091/opencv-edge-border-detection-based-on-color
-// Another silhouette detection: http://stackoverflow.com/questions/13586686/extract-external-contour-or-silhouette-of-image-in-python
-// Could be very useful: http://homepages.inf.ed.ac.uk/rbf/HIPR2/canny.htm
 
 func iter(i image.Image, fn func(x int, y int, pixel color.Color)) {
 	b := i.Bounds()
@@ -78,18 +96,9 @@ func transformRGB(i image.Image, fn func(int, int, color.Color) color.Color) ima
 	return n
 }
 
-// tranform TO grey
-func transformGrey(i image.Image, fn func(int, int, color.Color) color.Color) image.Image {
-	b := i.Bounds()
-	n := image.NewGray(b)
+// Converts and image to LUV and drops it into a tracking matrix
+func convertLuv() {
 
-	for y := b.Min.Y; y < b.Max.Y; y++ {
-		for x := b.Min.X; x < b.Max.X; x++ {
-			n.SetGray(x, y, fn(x, y, i.At(x, y)).(color.Gray))
-		}
-	}
-
-	return n
 }
 
 //
@@ -111,19 +120,6 @@ func photoshop(i image.Image) image.Image {
 	// 2. Create a new image of the corresponding size.
 	// dst is a new target image, src is the original image
 	dst := image.NewNRGBA(g.Bounds(i.Bounds()))
-
-	g.Draw(dst, i)
-	return dst
-}
-
-func localmax(i image.Image) image.Image {
-	g := gift.New(
-		gift.Maximum(5, true),
-	)
-
-	// 2. Create a new image of the corresponding size.
-	// dst is a new target image, src is the original image
-	dst := image.NewGray(g.Bounds(i.Bounds()))
 
 	g.Draw(dst, i)
 	return dst

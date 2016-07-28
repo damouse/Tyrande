@@ -27,8 +27,12 @@ import (
 	"github.com/lucasb-eyer/go-colorful"
 )
 
+// Returns a slice of lines from a provided image
 func hunt(img image.Image, colors []color.Color, thresh float64, width int) ([]Pix, []*Line) {
-	chunks, lines := getLines(img, colors, thresh, width)
+	// Convert the image to a more usable format
+
+	// Extract lines and chunks
+	chunks, lines := extract(img, colors, thresh, width)
 
 	// Create a new tracking matrix containing all the points
 	mat := newTrackingMat(img.Bounds().Max.X, img.Bounds().Max.Y)
@@ -36,7 +40,7 @@ func hunt(img image.Image, colors []color.Color, thresh float64, width int) ([]P
 		mat.setPix(p)
 	}
 
-	// Try masking lines with chunks
+	// Mask the lines by nilling out chunks in the matrix
 	for _, p := range chunks {
 		mat.set(p.x, p.y, nil)
 	}
@@ -52,7 +56,7 @@ func hunt(img image.Image, colors []color.Color, thresh float64, width int) ([]P
 
 // Identifies lines in a picture that have a color within thresh distance of a color in col
 // Returns lines and chunks
-func getLines(img image.Image, colors []color.Color, thresh float64, width int) (chunkPixels []Pix, linePixels []Pix) {
+func extract(img image.Image, colors []color.Color, thresh float64, width int) (chunkPixels []Pix, linePixels []Pix) {
 	// Can we just convert image and colors to LUV here once and then not bother with it again?
 
 	// output an image for testing purposes
@@ -139,6 +143,7 @@ func getLines(img image.Image, colors []color.Color, thresh float64, width int) 
 	return
 }
 
+// Creates lines from pixels
 func cluster(points []Pix, mat *TrackingMat) (ret []*Line) {
 	mat.iter(func(x, y int, pix *Pix) {
 		// Ignore non-line pixels or already added pixels
@@ -181,46 +186,6 @@ func filterLines(lines []*Line) (ret []*Line) {
 	}
 
 	return
-}
-
-// output an image for testing purposes
-func output(bounds image.Rectangle, chunks []Pix, lines []*Line) image.Image {
-	ret := image.NewNRGBA(bounds)
-
-	iter(ret, func(x, y int, c color.Color) {
-		ret.Set(x, y, color.Black)
-	})
-
-	for _, line := range lines {
-		rcolor := colorful.FastHappyColor()
-
-		for _, pix := range line.pixels {
-			ret.Set(pix.x, pix.y, rcolor)
-		}
-	}
-
-	// Write out the chunks in white
-	if DEBUG_DRAW_CHUNKS {
-		for _, p := range chunks {
-			ret.Set(p.x, p.y, color.White)
-		}
-	}
-
-	return ret
-}
-
-func outputMat(bounds image.Rectangle, mat *TrackingMat) image.Image {
-	ret := image.NewNRGBA(bounds)
-
-	mat.iter(func(x, y int, c *Pix) {
-		if c == nil {
-			ret.Set(x, y, color.Black)
-		} else {
-			ret.Set(c.x, c.y, c.Color)
-		}
-	})
-
-	return ret
 }
 
 // returns all pixels within range d of target coordinates x, y
@@ -276,4 +241,46 @@ func scanChunk(chunk []Pix, color color.Color, thresh float64) (ret []Pix) {
 	}
 
 	return
+}
+
+// Modeling and detecting on-screen players
+type Line struct {
+	pixels []*Pix
+	id     int
+	cX, cY int // center
+}
+
+type Pix struct {
+	color.Color
+	x, y int
+	line *Line
+}
+
+func (l *Line) add(p *Pix) {
+	if p.line == nil {
+		l.pixels = append(l.pixels, p)
+		p.line = l
+	}
+}
+
+func (l *Line) addAll(p []*Pix) {
+	for _, a := range p {
+		l.add(a)
+	}
+}
+
+func (l *Line) merge(o *Line) {
+	for _, p := range o.pixels {
+		p.line = nil
+		l.add(p)
+	}
+}
+
+func NewLine(id int) *Line {
+	return &Line{
+		[]*Pix{},
+		id,
+		0,
+		0,
+	}
 }

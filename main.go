@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"image/color"
-	"runtime"
 	"time"
 )
 
@@ -12,41 +11,53 @@ var (
 	LINE_WIDTH      int     = 1
 
 	DEBUG_DRAW_CHUNKS = false
+
+	TARGET_SWATCH = []color.Color{
+		color.NRGBA{219, 18, 29, 255},
+		color.NRGBA{140, 31, 59, 255},
+		color.NRGBA{182, 40, 59, 255},
+		color.NRGBA{212, 128, 151, 255},
+	}
 )
 
-// former manual checks on "lowsett.png"
-// allColors := []color.Color{
-// 	color.NRGBA{219, 18, 29, 255},
-// 	color.NRGBA{140, 31, 59, 255},
-// 	color.NRGBA{182, 40, 59, 255},
-// 	color.NRGBA{212, 128, 151, 255},
-// }
+func runOnce(colors []color.Color) {
+	// Load the image
+	p := open("lowsett.png")
 
-func runpipe() {
-	p := NewPipeline()
-	p.run(open("0.png"))
-	p.save()
+	// Line detection
+	start := time.Now()
+	chunks, lines := hunt(p, colors, COLOR_THRESHOLD, LINE_WIDTH)
+	fmt.Printf("Hunt completed in: %s\n", time.Since(start))
+
+	// Model detection
+
+	// Update movement logic
+
+	p = output(p.Bounds(), chunks, lines)
+	save(p, "huntress.png")
 }
 
-func runOnce(colors []color.Color, w *Window) {
-	// p := open("lowsett.png")
+func runContinuously(colors []color.Color) {
+	w := NewWindow()
 
-	for {
-		p := open("lowsett.png")
-		// Start benchmark
-		start := time.Now()
+	go func(win *Window) {
+		for {
+			p := open("lowsett.png")
+			// Start benchmark
+			start := time.Now()
 
-		chunks, lines := hunt(p, colors, COLOR_THRESHOLD, LINE_WIDTH)
+			chunks, lines := hunt(p, colors, COLOR_THRESHOLD, LINE_WIDTH)
 
-		// End benchmark
-		fmt.Printf("Hunt completed in: %s\n", time.Since(start))
+			// End benchmark
+			fmt.Printf("Hunt completed in: %s\n", time.Since(start))
 
-		p = output(p.Bounds(), chunks, lines)
+			p = output(p.Bounds(), chunks, lines)
 
-		w.show(p)
-	}
+			win.show(p)
+		}
+	}(w)
 
-	// save(p, "huntress.png")
+	w.wait()
 }
 
 func saveShop() {
@@ -56,23 +67,12 @@ func saveShop() {
 }
 
 func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
+	// s := NewSentinal()
+	// s.hunt()
+	// s.wait()
 
 	// Until the perfromance issues are handled within getLines we cant handle all the swatch colors
 	// swatch := loadSwatch()
 
-	swatch := []color.Color{
-		color.NRGBA{219, 18, 29, 255},
-		color.NRGBA{140, 31, 59, 255},
-		color.NRGBA{182, 40, 59, 255},
-		color.NRGBA{212, 128, 151, 255},
-	}
-
-	w := NewWindow()
-
-	go runOnce(swatch, w)
-
-	w.wait()
-
-	// saveShop()
+	runContinuously(TARGET_SWATCH)
 }
