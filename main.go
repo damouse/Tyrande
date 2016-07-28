@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image/color"
+	"runtime"
 	"sync"
 	"time"
 
@@ -26,7 +27,10 @@ var (
 	luvCache    = map[uint32]colorful.Color{}
 	linearMutex = &sync.RWMutex{}
 
+	// Cache luv processing
 	CACHE_LUV = false
+
+	CONVERTING_GOROUTINES = 8 // Number of concurrent workers for converting rgb -> LUV
 )
 
 func runOnce(colors []*Pix) {
@@ -73,6 +77,8 @@ func runContinuously(colors []*Pix) {
 }
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	// Until the perfromance issues are handled within getLines we cant handle all the swatch colors
 	// swatch := loadSwatch()
 
@@ -87,18 +93,7 @@ func main() {
 func sandbox() {
 	fmt.Println("Hello")
 
-	red := color.RGBA{0, 0, 0, 255}
+	a := 3
 
-	r, g, b, _ := red.RGBA()
-
-	// fmt.Printf("%#x %#x %#x\n", r, g+256, b)
-
-	// fmt.Printf("%#x %#x %#x\n", red.R, red.G, red.B)
-
-	// all := r + g + 256 + b + 65536
-	// fmt.Printf("%#x\n", all)
-
-	final := (r << 16) | (g << 8) | b
-
-	fmt.Printf("%#x\n", final)
+	fmt.Println(a / 4)
 }

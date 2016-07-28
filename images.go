@@ -36,12 +36,43 @@ func convertImage(i image.Image) *TrackingMat {
 	b := i.Bounds()
 	mat := newTrackingMat(b.Max.X, b.Max.Y)
 
+	// This works, but is wildly not concurrent.
+	// Maybe move this to the screen processing area?
+
+	// sliceX := b.Max.X / CONVERTING_GOROUTINES
+	// sliceY := b.Max.Y / CONVERTING_GOROUTINES
+
+	// fmt.Printf("Bounds: %d sliceX: %d, sliceY: %d\n", b, sliceX, sliceY)
+
+	// wg := &sync.WaitGroup{}
+	// wg.Add(CONVERTING_GOROUTINES)
+
+	// mtx := &sync.Mutex{}
+
+	// for worker := 0; worker < CONVERTING_GOROUTINES; worker++ {
+	// 	go func(n int) {
+
+	// 		fmt.Printf("N: %d, yMin: %d yMax: %d xMin: %d xMax: %d\n", n, n*sliceY, (n+1)*sliceY, n*sliceX, (n+1)*sliceX)
+
+	// 		for y := n * sliceY; y < (n+1)*sliceY; y++ {
+	// 			for x := b.Min.X; x < b.Max.X; x++ {
+	// 				mtx.Lock()
+	// 				mat.set(x, y, NewPix(x, y, i.At(x, y)))
+	// 				mtx.Unlock()
+	// 			}
+	// 		}
+
+	// 		wg.Done()
+	// 	}(worker)
+	// }
+
 	for y := b.Min.Y; y < b.Max.Y; y++ {
 		for x := b.Min.X; x < b.Max.X; x++ {
 			mat.set(x, y, NewPix(x, y, i.At(x, y)))
 		}
 	}
 
+	// wg.Wait()
 	return mat
 }
 
@@ -109,7 +140,7 @@ func loadSwatch() (result []color.Color) {
 	})
 
 	fmt.Printf("Loaded %d colors\n", len(ret))
-	save(ps, "edittedswatch.png")
+	// save(ps, "edittedswatch.png")
 	return
 }
 

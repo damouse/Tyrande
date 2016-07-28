@@ -112,6 +112,10 @@ func convertToColorful(c color.Color) colorful.Color {
 }
 
 func colorDistance(a, b *Pix) float64 {
+	if a == nil || b == nil {
+		return 1.5
+	}
+
 	return math.Sqrt(sq(a.r-b.r) + sq(a.g-b.g) + sq(a.b-b.b))
 }
 
