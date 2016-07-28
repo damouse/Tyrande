@@ -15,6 +15,7 @@ const (
 	PIX_NOTHING ptype = iota
 	PIX_CHUNK
 	PIX_LINE
+	PIX_VISITED
 )
 
 // Modeling and detecting on-screen players

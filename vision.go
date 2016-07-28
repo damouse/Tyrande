@@ -60,6 +60,56 @@ func lineify(p *TrackingMat, colors []*Pix, thresh float64, width int) []*Line {
 	return outlines
 }
 
+func lineifyExperimental(p *TrackingMat, colors []*Pix, thresh float64, width int) []*Line {
+	for y := 0; y < p.h; y += 3 {
+		for x := 0; x < p.w; x += 3 {
+			// Get the pixel from the matrix
+			pix := p.get(x, y)
+
+			// something already visited this pixel
+			if pix.ptype != PIX_NOTHING {
+				continue
+			}
+
+			// Colors dont match
+			if !isClose(pix, colors, thresh) {
+				continue
+			}
+
+			// go will shuffle memory too when adding/removing items from q
+			q := []*Pix{pix}
+
+			for len(q) > 0 {
+
+				// shift the q
+				op := q[0]
+				q = q[1:]
+
+				if op.ptype == PIX_CHUNK {
+					continue
+				}
+
+				op.ptype = PIX_CHUNK
+
+				for _, mod := range mods {
+					newx := op.x + mod.x
+					newy := op.y + mod.y
+
+					if 0 <= newy && newy < p.h && 0 <= newx && newx < p.w {
+						next := p.get(newx, newy)
+
+						if !isClose(op, colors, thresh) {
+							q = append(q, next)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 func isClose(c *Pix, targets []*Pix, thresh float64) bool {
 	for _, t := range targets {
 		distance := colorDistance(c, t)

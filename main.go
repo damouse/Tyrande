@@ -14,8 +14,8 @@ var (
 	COLOR_THRESHOLD float64 = 0.2
 	LINE_WIDTH      int     = 1
 
-	DEBUG_DRAW_CHUNKS = false // draw the rejected color matches on the resulting debug image
-	CACHE_LUV         = true  // Cache luv processing
+	DEBUG_DRAW_CHUNKS = true // draw the rejected color matches on the resulting debug image
+	CACHE_LUV         = true // Cache luv processing
 
 	luvCache    = map[uint32]colorful.Color{}
 	linearMutex = &sync.RWMutex{}
@@ -36,7 +36,7 @@ func runOnce(colors []*Pix) {
 
 	mat := convertImage(p)
 
-	lineify(mat, colors, COLOR_THRESHOLD, LINE_WIDTH)
+	lineifyExperimental(mat, colors, COLOR_THRESHOLD, LINE_WIDTH)
 
 	fmt.Printf("Hunt completed in: %s\n", time.Since(start))
 
