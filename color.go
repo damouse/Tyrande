@@ -150,6 +150,7 @@ func convertToColorful(c color.Color) colorful.Color {
 func colorDistance(a, b *Pix) float64 {
 	a.initLuv()
 	b.initLuv()
+
 	// if a == nil || b == nil {
 	// 	return 1.5
 	// }
