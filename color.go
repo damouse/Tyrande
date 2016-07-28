@@ -26,10 +26,12 @@ type Line struct {
 
 type Pix struct {
 	color.Color
-	x, y    int
+
+	x, y    int     // coordinates of this pixel
 	r, g, b float64 // these are also l, u, v
-	line    *Line
-	ptype   // Algos may mark this this pixel as needed
+
+	line  *Line // line this pixel belongs to
+	ptype       // A marker that vision may set as needed
 }
 
 func slide(c color.Color) uint32 {

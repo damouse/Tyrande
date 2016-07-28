@@ -25,16 +25,16 @@ var (
 
 func runOnce(colors []*Pix) {
 	// Load the image
-	// p := open("lowsett.png")
+	p := open("lowsett.png")
 
 	// Benchmark
 	start := time.Now()
 
 	// Grab the screen
-	mat := CaptureLeft()
+	// mat := CaptureLeft()
 	// save(p, "cap.png")
 
-	// mat := convertImage(p)
+	mat := convertImage(p)
 
 	lineify(mat, colors, COLOR_THRESHOLD, LINE_WIDTH)
 
@@ -80,8 +80,8 @@ func main() {
 
 	swatch := convertSwatches()
 
-	runContinuously(swatch)
-	// runOnce(swatch)
+	// runContinuously(swatch)
+	runOnce(swatch)
 
 	// sandbox()
 }

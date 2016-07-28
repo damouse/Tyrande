@@ -24,7 +24,7 @@ func lineify(p *TrackingMat, colors []*Pix, thresh float64, width int) []*Line {
 	var pixLines []*Pix
 
 	for y := 0; y < p.h; y++ {
-		for x := 0; x < p.w; x++ {
+		for x := 0; x < p.w; x += 2 {
 			// Get the pixel from the matrix
 			pix := p.get(x, y)
 
@@ -162,23 +162,25 @@ func cluster(mat *TrackingMat) (ret []*Line) {
 			return
 		}
 
+		// Create a new line and a queue
 		q := []*Pix{pix}
 		line := NewLine(0)
 		ret = append(ret, line)
 
 		for len(q) > 0 {
+			// Pop the next pixel off the queue
 			next := q[0]
 			q = q[1:]
 
-			// continue if next is marked
+			// continue if next already belongs to a line
 			if next.line != nil {
 				continue
 			}
 
-			// Add next
+			// Add this pixel to the line
 			line.add(next)
 
-			// Queue neighbors
+			// Queue this pixels neighbors
 			q = append(q, neighborsCluster(next.x, next.y, 1, mat)...)
 		}
 	})
