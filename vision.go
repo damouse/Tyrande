@@ -28,7 +28,7 @@ import (
 )
 
 // Returns a slice of lines from a provided image
-func hunt(img image.Image, colors []color.Color, thresh float64, width int) ([]Pix, []*Line) {
+func hunt(img image.Image, colors []*Pix, thresh float64, width int) ([]Pix, []*Line) {
 	// Convert the image to a more usable format
 	// pixMatrix := convertImage(img)
 	convertImage(img)
@@ -58,7 +58,7 @@ func hunt(img image.Image, colors []color.Color, thresh float64, width int) ([]P
 
 // Identifies lines in a picture that have a color within thresh distance of a color in col
 // Returns lines and chunks
-func extract(img image.Image, colors []color.Color, thresh float64, width int) (chunkPixels []Pix, linePixels []Pix) {
+func extract(img image.Image, colors []*Pix, thresh float64, width int) (chunkPixels []Pix, linePixels []Pix) {
 	// Can we just convert image and colors to LUV here once and then not bother with it again?
 
 	// output an image for testing purposes
@@ -69,35 +69,12 @@ func extract(img image.Image, colors []color.Color, thresh float64, width int) (
 		loveImage.set(x, y, &colorful.Color{l1, u1, v1})
 	})
 
-	lovelyTargets := []*colorful.Color{}
-
-	for _, c := range colors {
-		l1, u1, v1 := convertToColorful(c).Luv()
-		lovelyTargets = append(lovelyTargets, &colorful.Color{l1, u1, v1})
-	}
-
 	iter(img, func(x, y int, c color.Color) {
-		// Manually recasting the luv color
-		// luv := love.At(x, y).(colorful.Color)
-		// luv := convertToColorful(c)
-
 		isClose := false
-		for i, _ := range colors {
-			// distance := colorDistance(c, target)
-
-			// l1, u1, v1 := convertToColorful(c).Luv()
-			// l2, u2, v2 := convertToColorful(target).Luv()
-
-			// man := luvSample.DistanceLuv(luvTarget)
-			// man := math.Sqrt(sq(l1-l2) + sq(u1-u2) + sq(v1-v2))
-
+		for _, t := range colors {
 			// Testing manual conversion
 			c := loveImage.get(x, y)
-			t := lovelyTargets[i]
-			man := math.Sqrt(sq(c.R-t.R) + sq(c.G-t.G) + sq(c.B-t.B))
-
-			// fmt.Println(distance, man)
-			// end testing manual conversion
+			man := math.Sqrt(sq(c.R-t.r) + sq(c.G-t.g) + sq(c.B-t.b))
 
 			distance := man
 

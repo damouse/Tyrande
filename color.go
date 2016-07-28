@@ -23,13 +23,15 @@ type Pix struct {
 }
 
 func NewPix(x, y int, c color.Color) *Pix {
+	l, u, v := convertToColorful(c).Luv()
+
 	return &Pix{
 		c,
 		x,
 		y,
-		0,
-		0,
-		0,
+		l,
+		u,
+		v,
 		nil,
 	}
 }

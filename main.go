@@ -20,7 +20,14 @@ var (
 	}
 )
 
-func runOnce(colors []color.Color) {
+func convertSwatches() (ret []*Pix) {
+	for _, c := range TARGET_SWATCH {
+		ret = append(ret, NewPix(0, 0, c))
+	}
+	return
+}
+
+func runOnce(colors []*Pix) {
 	// Load the image
 	p := open("lowsett.png")
 
@@ -37,7 +44,7 @@ func runOnce(colors []color.Color) {
 	save(p, "huntress.png")
 }
 
-func runContinuously(colors []color.Color) {
+func runContinuously(colors []*Pix) {
 	w := NewWindow()
 
 	go func(win *Window) {
@@ -74,5 +81,7 @@ func main() {
 	// Until the perfromance issues are handled within getLines we cant handle all the swatch colors
 	// swatch := loadSwatch()
 
-	runContinuously(TARGET_SWATCH)
+	swatch := convertSwatches()
+
+	runContinuously(swatch)
 }
