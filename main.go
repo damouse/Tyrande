@@ -15,52 +15,53 @@ var (
 	LINE_WIDTH      int     = 1
 
 	DEBUG_DRAW_CHUNKS = false // draw the rejected color matches on the resulting debug image
-	CACHE_LUV         = false // Cache luv processing (NOTE: this fucks with the colors!) implementation is not correct
+	CACHE_LUV         = true  // Cache luv processing (NOTE: this fucks with the colors!) implementation is not correct
 
 	luvCache    = map[uint32]colorful.Color{}
 	linearMutex = &sync.RWMutex{}
 
 	CONVERTING_GOROUTINES = 8 // Number of concurrent workers for converting rgb -> LUV
+
+	SWATCH []*Pix
 )
 
-func runOnce(colors []*Pix) {
-	// Load the image
-	p := open("lowsett.png")
+func runStaticOnce() {
+	p := open("retry.png")
 
-	// Benchmark
 	start := time.Now()
-
-	// Grab the screen
-	// mat := CaptureLeft()
-	// save(p, "cap.png")
-
 	mat := convertImage(p)
-
-	lineify(mat, colors, COLOR_THRESHOLD, LINE_WIDTH)
+	lineify(mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
 
 	fmt.Printf("Hunt completed in: %s\n", time.Since(start))
-
-	// Model detection
-
-	// Update movement logic
 
 	mat.save("huntress.png")
 }
 
-func runContinuously(colors []*Pix) {
+func runScreencapOnce() {
+	start := time.Now()
+
+	p := CaptureLeft()
+	mat := convertImage(p)
+	lineify(mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
+
+	fmt.Printf("Hunt completed in: %s\n", time.Since(start))
+	mat.save("huntress.png")
+}
+
+func runContinuously() {
 	w := NewWindow()
 
 	go func(win *Window) {
 		for {
-			// p := open("lowsett.png")
+			p := open("lowsett.png")
 
 			// Benchmark
 			start := time.Now()
-			mat := CaptureLeft()
+			// mat := CaptureLeft()
 
-			// mat := convertImage(p)
+			mat := convertImage(p)
 
-			lineify(mat, colors, COLOR_THRESHOLD, LINE_WIDTH)
+			lineify(mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
 
 			fmt.Printf("Hunt completed in: %s\n", time.Since(start))
 
@@ -75,21 +76,23 @@ func main() {
 	fmt.Println("Tyrande starting")
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	// Until the perfromance issues are handled within getLines we cant handle all the swatch colors
-	// swatch := loadSwatch()
-
-	swatch := convertSwatches()
+	loadSwatch()
 
 	// runContinuously(swatch)
-	runOnce(swatch)
+	runScreencapOnce()
+
+	// runStaticOnce()
 
 	// sandbox()
+}
+
+type Alpha struct {
+	a int
 }
 
 func sandbox() {
 	fmt.Println("Hello")
 
-	a := 3
-
-	fmt.Println(a / 4)
+	slicer := make([]Alpha, 3)
+	fmt.Println(slicer[2])
 }

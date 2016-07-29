@@ -28,16 +28,11 @@ Run profiling command:
 ```
 go test -run=^$ -bench=. -cpuprofile=cpu.out
 go tool pprof tyrande.test.exe cpu.out
+web
 ```
 
 See top 20 functions: 
 
 ```
 top20
-```
-
-Export to SVG: 
-
-```
-web
 ```

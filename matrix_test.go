@@ -26,7 +26,7 @@ func TestAdjacentColor(t *testing.T) {
 	m.set(NewPix(1, 1, color.RGBA{255, 0, 0, 255}))
 	m.set(NewPix(1, 0, color.RGBA{255, 0, 0, 255}))
 
-	n := m.adjacentSimilarColor(m.get(1, 1), 1, 0.2)
+	n := m.adjacentSimilarColor(m.get(1, 1), m.get(1, 1), 1, 0.2)
 
 	Equal(t, 2, len(n))
 }

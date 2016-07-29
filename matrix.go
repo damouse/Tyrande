@@ -8,34 +8,24 @@ import (
 // Tracks the results of a GroupLines operation
 // 0 is univisited, 1 is rejected, 2 is line
 type PixMatrix struct {
-	arr  []*Pix
+	arr  []Pix
 	w, h int
 }
 
 func NewPixMatrix(width, height int) *PixMatrix {
 	return &PixMatrix{
-		arr: make([]*Pix, width*height),
+		arr: make([]Pix, width*height),
 		w:   width,
 		h:   height,
 	}
 }
 
 func (m *PixMatrix) get(x, y int) *Pix {
-	return m.arr[y*m.w+x]
+	return &m.arr[y*m.w+x]
 }
 
 func (m *PixMatrix) set(v *Pix) {
-	m.arr[v.y*m.w+v.x] = v
-}
-
-//
-// Higher level access
-func (m *PixMatrix) iter(fn func(x int, y int, pixel *Pix)) {
-	for y := 0; y < m.h; y++ {
-		for x := 0; x < m.w; x++ {
-			fn(x, y, m.get(x, y))
-		}
-	}
+	m.arr[v.y*m.w+v.x] = *v
 }
 
 // Get the adjacent pixels to the given pixel that are within distance in x and y
@@ -74,8 +64,6 @@ func (m *PixMatrix) adjacentSimilarColor(p *Pix, target *Pix, distance int, thre
 	return
 }
 
-// write Adjacent Color function
-
 //
 // File utils
 func (m *PixMatrix) save(n string) {
@@ -85,21 +73,27 @@ func (m *PixMatrix) save(n string) {
 func (m *PixMatrix) toImage() image.Image {
 	ret := image.NewNRGBA(image.Rect(0, 0, m.w, m.h))
 
-	m.iter(func(x, y int, p *Pix) {
-		if p == nil {
-			ret.Set(x, y, color.Black)
+	for y := 0; y < m.h; y++ {
+		for x := 0; x < m.w; x++ {
+			p := m.get(x, y)
 
-		} else if DEBUG_DRAW_CHUNKS && p.ptype == PIX_CHUNK {
-			ret.Set(x, y, color.White)
+			if p == nil {
+				ret.Set(x, y, color.Black)
 
-		} else if p.ptype == PIX_LINE {
-			ret.Set(x, y, p.Color)
+			} else if DEBUG_DRAW_CHUNKS && p.ptype == PIX_CHUNK {
+				ret.Set(x, y, color.White)
 
-		} else {
-			r, g, b, _ := p.Color.RGBA()
-			ret.Set(x, y, color.RGBA{uint8(float64(r) / 65535.0 * 25), uint8(float64(g) / 65535.0 * 25), uint8(float64(b) / 65535.0 * 25), 255})
+			} else if p.ptype == PIX_LINE {
+				ret.Set(x, y, p.Color)
+
+			} else {
+				// ret.Set(x, y, p.Color)
+
+				r, g, b, _ := p.Color.RGBA()
+				ret.Set(x, y, color.RGBA{uint8(float64(r) / 65535.0 * 25), uint8(float64(g) / 65535.0 * 25), uint8(float64(b) / 65535.0 * 25), 255})
+			}
 		}
-	})
+	}
 
 	return ret
 }

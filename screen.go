@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"image"
-	"image/color"
 	"reflect"
 	"unsafe"
 
@@ -24,7 +23,7 @@ func ScreenRect() (image.Rectangle, error) {
 	return image.Rect(0, 0, int(x), int(y)), nil
 }
 
-func CaptureScreen() (*PixMatrix, error) {
+func CaptureScreen() (image.Image, error) {
 	r, e := ScreenRect()
 	if e != nil {
 		return nil, e
@@ -32,12 +31,12 @@ func CaptureScreen() (*PixMatrix, error) {
 	return CaptureRect(r)
 }
 
-func CaptureLeft() *PixMatrix {
+func CaptureLeft() image.Image {
 	i, _ := CaptureRect(image.Rect(0, 0, 2100, 1440))
 	return i
 }
 
-func CaptureRect(rect image.Rectangle) (*PixMatrix, error) {
+func CaptureRect(rect image.Rectangle) (image.Image, error) {
 	hDC := win.GetDC(0)
 	if hDC == 0 {
 		return nil, fmt.Errorf("Could not Get primary display err:%d.\n", win.GetLastError())
@@ -95,18 +94,19 @@ func CaptureRect(rect image.Rectangle) (*PixMatrix, error) {
 
 	imageBytes := make([]byte, len(slice))
 
-	ret := NewPixMatrix(x, y)
+	// ret := NewPixMatrix(x, y)
 
 	// Um... this cant possibly work. How is it working? Has this version been tested?
 	// Have to do w/h calculation
 	for i := 0; i < len(imageBytes); i += 4 {
-		// imageBytes[i], imageBytes[i+2], imageBytes[i+1], imageBytes[i+3] = slice[i+2], slice[i], slice[i+1], slice[i+3]
-		ret.set(NewPix(0, 0, color.RGBA{uint8(slice[i+2]), uint8(slice[i]), uint8(slice[i+1]), uint8(slice[i+3])}))
+		imageBytes[i], imageBytes[i+2], imageBytes[i+1], imageBytes[i+3] = slice[i+2], slice[i], slice[i+1], slice[i+3]
+		// p := &ret.arr[i/4]
+		// p.Color = color.RGBA{uint8(slice[i+2]), uint8(slice[i+1]), uint8(slice[i]), uint8(slice[i+3])}
 	}
 
-	// img := &image.NRGBA{imageBytes, 4 * x, image.Rect(0, 0, x, y)}
-	return ret, nil
-	// return img, nil
+	img := &image.NRGBA{imageBytes, 4 * x, image.Rect(0, 0, x, y)}
+	// return ret, nil
+	return img, nil
 }
 
 // Golang dx9 wrapper: https://github.com/gonutz/d3d9

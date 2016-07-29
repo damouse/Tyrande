@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 // -- Modeling
 // Merge close lines
 // Determine a center
@@ -87,8 +85,6 @@ func lineify(p *PixMatrix, colors []*Pix, thresh float64, width int) (lines []*L
 
 	// Scrub out lines that are most likely not lines
 	lines = filterLines(lines)
-
-	fmt.Println(len(lines))
 
 	return
 }

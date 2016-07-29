@@ -71,7 +71,11 @@ func convertImage(i image.Image) *PixMatrix {
 
 	for y := b.Min.Y; y < b.Max.Y; y++ {
 		for x := b.Min.X; x < b.Max.X; x++ {
-			mat.set(NewPix(x, y, i.At(x, y)))
+			// mat.set(NewPix(x, y, i.At(x, y)))
+			p := mat.get(x, y)
+			p.Color = i.At(x, y)
+			p.x = x
+			p.y = y
 		}
 	}
 
@@ -107,6 +111,9 @@ func photoshop(i image.Image) image.Image {
 }
 
 func loadSwatch() (result []color.Color) {
+	SWATCH = convertSwatches()
+	return
+
 	var ret []color.Color
 
 	i := open("swatch.png")

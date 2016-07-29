@@ -31,8 +31,7 @@ type Pix struct {
 	x, y    int     // coordinates of this pixel
 	r, g, b float64 // these are also l, u, v
 
-	line     *Line // line this pixel belongs to
-	lazyInit bool  // true if luv has been calculated, else false
+	lazyInit bool // true if luv has been calculated, else false
 
 	ptype       // A marker that vision may set as needed
 	filltag int // used by the fill algo
@@ -53,7 +52,6 @@ func NewPix(x, y int, c color.Color) *Pix {
 		r:        0.0,
 		g:        0.0,
 		b:        0.0,
-		line:     nil,
 		lazyInit: false,
 		ptype:    PIX_NOTHING,
 		filltag:  0,
@@ -102,10 +100,7 @@ func NewLine(id int) *Line {
 }
 
 func (l *Line) add(p *Pix) {
-	if p.line == nil {
-		l.pixels = append(l.pixels, p)
-		p.line = l
-	}
+	l.pixels = append(l.pixels, p)
 }
 
 func (l *Line) addAll(p []*Pix) {
@@ -116,7 +111,6 @@ func (l *Line) addAll(p []*Pix) {
 
 func (l *Line) merge(o *Line) {
 	for _, p := range o.pixels {
-		p.line = nil
 		l.add(p)
 	}
 }
