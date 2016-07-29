@@ -40,7 +40,7 @@ func TestAdjacentLarge(t *testing.T) {
 
 func TestAdjacentEdge(t *testing.T) {
 	m := createMat(3, 3)
-	n := m.adjacent(m.get(0, 0), 1)
+	n := m.adjacent(m.get(2, 2), 1)
 
 	Equal(t, 3, len(n))
 }

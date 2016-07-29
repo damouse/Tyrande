@@ -42,12 +42,12 @@ func (m *PixMatrix) iter(fn func(x int, y int, pixel *Pix)) {
 // The given pixel is not returned
 func (m *PixMatrix) adjacent(p *Pix, distance int) (ret []*Pix) {
 	for x := p.x - distance; x <= p.x+distance; x++ {
-		if x < 0 || x > m.w {
+		if x < 0 || x >= m.w {
 			continue
 		}
 
 		for y := p.y - distance; y <= p.y+distance; y++ {
-			if y < 0 || y > m.h {
+			if y < 0 || y >= m.h {
 				continue
 			}
 

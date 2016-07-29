@@ -25,7 +25,7 @@ var (
 
 func runOnce(colors []*Pix) {
 	// Load the image
-	p := open("lowsett.png")
+	p := open("small.png")
 
 	// Benchmark
 	start := time.Now()

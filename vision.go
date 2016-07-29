@@ -64,19 +64,49 @@ func lineifyExperimental(p *PixMatrix, colors []*Pix, thresh float64, width int)
 	for y := 0; y < p.h; y += 3 {
 		for x := 0; x < p.w; x += 3 {
 			// Get the pixel from the matrix
-			pix := p.get(x, y)
+			current := p.get(x, y)
 
 			// This pixel has been visited by something or another
-			// if pix.ptype == PIX_NOTHING {
-			// 	continue
-			// }
-
-			// Colors dont match
-			if !isClose(pix, colors, thresh) {
+			if current.ptype != PIX_NOTHING {
 				continue
 			}
 
-			chunkFill(pix, p, 0.4)
+			// Colors dont match
+			if !isClose(current, colors, thresh) {
+				continue
+			}
+
+			q := []*Pix{current}
+
+			fillThresh := 0.1
+
+			for len(q) > 0 {
+				pix := q[0]
+				q = q[1:]
+
+				// Get neighbors that are of a similar color
+				adj := p.adjacentSimilarColor(pix, 1, fillThresh)
+
+				// Check for a chunk
+				if len(adj) == 8 {
+					pix.ptype = PIX_CHUNK
+
+					for _, p := range p.adjacentSimilarColor(pix, 3, fillThresh) {
+						p.ptype = PIX_CHUNK
+					}
+				} else if pix.ptype != PIX_CHUNK {
+					pix.ptype = PIX_LINE
+				}
+
+				// Queue all non-visited neighbors (not visited means not queued)
+				for _, p := range adj {
+					if p.ptype == PIX_NOTHING {
+						p.ptype = PIX_VISITED
+
+						q = append(q, p)
+					}
+				}
+			}
 		}
 	}
 
