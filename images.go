@@ -32,9 +32,9 @@ func open(path string) image.Image {
 }
 
 // Convert an image to a Pix matrix
-func convertImage(i image.Image) *TrackingMat {
+func convertImage(i image.Image) *PixMatrix {
 	b := i.Bounds()
-	mat := newTrackingMat(b.Max.X, b.Max.Y)
+	mat := NewPixMatrix(b.Max.X, b.Max.Y)
 
 	// This works, but is wildly not concurrent.
 	// Maybe move this to the screen processing area?
@@ -71,7 +71,7 @@ func convertImage(i image.Image) *TrackingMat {
 
 	for y := b.Min.Y; y < b.Max.Y; y++ {
 		for x := b.Min.X; x < b.Max.X; x++ {
-			mat.set(x, y, NewPix(x, y, i.At(x, y)))
+			mat.set(NewPix(x, y, i.At(x, y)))
 		}
 	}
 

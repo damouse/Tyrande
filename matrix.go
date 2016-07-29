@@ -7,32 +7,30 @@ import (
 
 // Tracks the results of a GroupLines operation
 // 0 is univisited, 1 is rejected, 2 is line
-type TrackingMat struct {
+type PixMatrix struct {
 	arr  []*Pix
 	w, h int
 }
 
-func newTrackingMat(width, height int) *TrackingMat {
-	return &TrackingMat{
+func NewPixMatrix(width, height int) *PixMatrix {
+	return &PixMatrix{
 		arr: make([]*Pix, width*height),
 		w:   width,
 		h:   height,
 	}
 }
 
-func (m *TrackingMat) get(x, y int) *Pix {
+func (m *PixMatrix) get(x, y int) *Pix {
 	return m.arr[y*m.w+x]
 }
 
-func (m *TrackingMat) set(x, y int, v *Pix) {
-	m.arr[y*m.w+x] = v
+func (m *PixMatrix) set(v *Pix) {
+	m.arr[v.y*m.w+v.x] = v
 }
 
-func (m *TrackingMat) setPix(p Pix) {
-	m.set(p.x, p.y, &p)
-}
-
-func (m *TrackingMat) iter(fn func(x int, y int, pixel *Pix)) {
+//
+// Higher level access
+func (m *PixMatrix) iter(fn func(x int, y int, pixel *Pix)) {
 	for y := 0; y < m.h; y++ {
 		for x := 0; x < m.w; x++ {
 			fn(x, y, m.get(x, y))
@@ -40,11 +38,51 @@ func (m *TrackingMat) iter(fn func(x int, y int, pixel *Pix)) {
 	}
 }
 
-func (m *TrackingMat) save(n string) {
+// Get the adjacent pixels to the given pixel that are within distance in x and y
+// The given pixel is not returned
+func (m *PixMatrix) adjacent(p *Pix, distance int) (ret []*Pix) {
+	for x := p.x - distance; x <= p.x+distance; x++ {
+		if x < 0 || x > m.w {
+			continue
+		}
+
+		for y := p.y - distance; y <= p.y+distance; y++ {
+			if y < 0 || y > m.h {
+				continue
+			}
+
+			// Dont return this pixel
+			if !(x == p.x && y == p.y) {
+				ret = append(ret, m.get(x, y))
+			}
+		}
+	}
+
+	return
+}
+
+// Returns adjacent pixels that are within thresh color of the given pixel
+func (m *PixMatrix) adjacentSimilarColor(p *Pix, distance int, thresh float64) (ret []*Pix) {
+	adj := m.adjacent(p, distance)
+
+	for _, n := range adj {
+		if colorDistance(p, n) < thresh {
+			ret = append(ret, n)
+		}
+	}
+
+	return
+}
+
+// write Adjacent Color function
+
+//
+// File utils
+func (m *PixMatrix) save(n string) {
 	save(m.toImage(), n)
 }
 
-func (m *TrackingMat) toImage() image.Image {
+func (m *PixMatrix) toImage() image.Image {
 	ret := image.NewNRGBA(image.Rect(0, 0, m.w, m.h))
 
 	m.iter(func(x, y int, p *Pix) {

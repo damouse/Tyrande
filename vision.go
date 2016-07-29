@@ -20,7 +20,7 @@ TODO:
 */
 
 // Returns a slice of lines from a provided image
-func lineify(p *TrackingMat, colors []*Pix, thresh float64, width int) []*Line {
+func lineify(p *PixMatrix, colors []*Pix, thresh float64, width int) []*Line {
 	var pixLines []*Pix
 
 	for y := 0; y < p.h; y++ {
@@ -60,7 +60,7 @@ func lineify(p *TrackingMat, colors []*Pix, thresh float64, width int) []*Line {
 	return outlines
 }
 
-func lineifyExperimental(p *TrackingMat, colors []*Pix, thresh float64, width int) []*Line {
+func lineifyExperimental(p *PixMatrix, colors []*Pix, thresh float64, width int) []*Line {
 	for y := 0; y < p.h; y += 3 {
 		for x := 0; x < p.w; x += 3 {
 			// Get the pixel from the matrix
@@ -125,7 +125,7 @@ func filterLines(lines []*Line) (ret []*Line) {
 
 // returns all pixels within range d of target coordinates x, y
 // The pixel in the middle is included in results
-func neighbors(tX, tY, distance int, m *TrackingMat) (ret []*Pix) {
+func neighbors(tX, tY, distance int, m *PixMatrix) (ret []*Pix) {
 	for x := tX - distance; x <= tX+distance; x++ {
 		if x < 0 || x > m.w {
 			continue
@@ -144,7 +144,7 @@ func neighbors(tX, tY, distance int, m *TrackingMat) (ret []*Pix) {
 }
 
 // Like neighbors but only returns line pixels. (ptype == PIX_LINE)
-func neighborsCluster(tX, tY, distance int, i *TrackingMat) (ret []*Pix) {
+func neighborsCluster(tX, tY, distance int, i *PixMatrix) (ret []*Pix) {
 	for _, p := range neighbors(tX, tY, distance, i) {
 		if p.ptype == PIX_LINE {
 			ret = append(ret, p)
@@ -166,7 +166,7 @@ func scanChunk(chunk []*Pix, target *Pix, thresh float64) (ret []*Pix) {
 }
 
 // Mark chunk pixels in the matrix
-func markChunk(c *Pix, m *TrackingMat, neighbor []*Pix, width int, thresh float64) (chunkPixels []*Pix) {
+func markChunk(c *Pix, m *PixMatrix, neighbor []*Pix, width int, thresh float64) (chunkPixels []*Pix) {
 	for _, p := range neighbor {
 		chunkPixels = append(chunkPixels, p)
 		p.ptype = PIX_CHUNK
@@ -185,7 +185,7 @@ func markChunk(c *Pix, m *TrackingMat, neighbor []*Pix, width int, thresh float6
 }
 
 // Creates lines from pixels
-func cluster(mat *TrackingMat) (ret []*Line) {
+func cluster(mat *PixMatrix) (ret []*Line) {
 	mat.iter(func(x, y int, pix *Pix) {
 		// Ignore non-line pixels or already added pixels
 		if pix == nil || pix.ptype != PIX_LINE || pix.line != nil {
