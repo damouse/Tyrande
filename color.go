@@ -10,7 +10,6 @@ import (
 )
 
 type ptype int
-type fillStatus int
 
 const (
 	PIX_NOTHING ptype = iota
@@ -35,8 +34,8 @@ type Pix struct {
 	line     *Line // line this pixel belongs to
 	lazyInit bool  // true if luv has been calculated, else false
 
-	ptype           // A marker that vision may set as needed
-	fillStatus bool // used by the fill algo
+	ptype       // A marker that vision may set as needed
+	filltag int // used by the fill algo
 }
 
 func slide(c color.Color) uint32 {
@@ -48,16 +47,16 @@ func slide(c color.Color) uint32 {
 // Pix
 func NewPix(x, y int, c color.Color) *Pix {
 	return &Pix{
-		Color:      c,
-		x:          x,
-		y:          y,
-		r:          0,
-		g:          0,
-		b:          0,
-		line:       nil,
-		lazyInit:   false,
-		ptype:      PIX_NOTHING,
-		fillStatus: false,
+		Color:    c,
+		x:        x,
+		y:        y,
+		r:        0,
+		g:        0,
+		b:        0,
+		line:     nil,
+		lazyInit: false,
+		ptype:    PIX_NOTHING,
+		filltag:  0,
 	}
 }
 

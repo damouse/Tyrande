@@ -19,54 +19,16 @@ TODO:
 	Hunting performance
 */
 
-// Returns a slice of lines from a provided image
-func lineify(p *PixMatrix, colors []*Pix, thresh float64, width int) []*Line {
-	var pixLines []*Pix
+func lineify(p *PixMatrix, colors []*Pix, thresh float64, width int) (lines []*Line) {
+	filltag := 0
+	fillThresh := 0.1
 
-	for y := 0; y < p.h; y++ {
-		for x := 0; x < p.w; x += 2 {
-			// Get the pixel from the matrix
-			pix := p.get(x, y)
-
-			// Check if the pixel is close to any of the target colors
-			if !isClose(pix, colors, thresh) {
-				continue
-			}
-
-			// Get adjacent pixels
-			neighbors := neighbors(x, y, width, p)
-
-			// Determine if this is the start of a chunk or a line. This thresh seems to do better higher
-			matches := scanChunk(neighbors, pix, 0.4)
-
-			// If all neighbors are matches then mark this as a chunk
-			if len(matches) == len(neighbors) {
-				markChunk(pix, p, neighbors, width, thresh)
-
-			} else {
-				// Else mark it as a line
-				pixLines = append(pixLines, pix)
-				pix.ptype = PIX_LINE
-			}
-		}
-	}
-
-	// Cluster line pixels into lines
-	rawLines := cluster(p)
-
-	// Scrub out lines that are most likely not lines
-	outlines := filterLines(rawLines)
-
-	return outlines
-}
-
-func lineifyExperimental(p *PixMatrix, colors []*Pix, thresh float64, width int) []*Line {
-	for y := 0; y < p.h; y += 3 {
-		for x := 0; x < p.w; x += 3 {
+	for y := 0; y < p.h; y += 5 {
+		for x := 0; x < p.w; x += 5 {
 			// Get the pixel from the matrix
 			current := p.get(x, y)
 
-			// This pixel has been visited by something or another
+			// This pixel has been filled
 			if current.ptype != PIX_NOTHING {
 				continue
 			}
@@ -76,9 +38,23 @@ func lineifyExperimental(p *PixMatrix, colors []*Pix, thresh float64, width int)
 				continue
 			}
 
+			// Get adjacents
+			adj := p.adjacentSimilarColor(current, 1, fillThresh)
+
+			// If this is a chunk continue
+			if len(adj) > 7 {
+				continue
+			}
+
+			// Create a new line object
+			line := NewLine(0)
+			lines = append(lines, line)
+
+			// Begin fill loop
 			q := []*Pix{current}
 
-			fillThresh := 0.1
+			// Pixels visited as part of this fill are tagged with this int
+			filltag += 1
 
 			for len(q) > 0 {
 				pix := q[0]
@@ -87,22 +63,19 @@ func lineifyExperimental(p *PixMatrix, colors []*Pix, thresh float64, width int)
 				// Get neighbors that are of a similar color
 				adj := p.adjacentSimilarColor(pix, 1, fillThresh)
 
-				// Check for a chunk
-				if len(adj) == 8 {
-					pix.ptype = PIX_CHUNK
-
-					for _, p := range p.adjacent(pix, 3) {
-						p.ptype = PIX_CHUNK
-					}
-				} else if pix.ptype != PIX_CHUNK {
-					pix.ptype = PIX_LINE
+				// Stop immediately if a chunk is found
+				if len(adj) > 7 {
+					break
 				}
+
+				// Mark as line
+				pix.ptype = PIX_LINE
+				line.add(pix)
 
 				// Queue all non-visited neighbors (not visited means not queued)
 				for _, p := range adj {
-					if p.ptype == PIX_NOTHING {
-						p.ptype = PIX_VISITED
-
+					if p.ptype == PIX_NOTHING && p.filltag != filltag {
+						p.filltag = filltag
 						q = append(q, p)
 					}
 				}
@@ -110,14 +83,28 @@ func lineifyExperimental(p *PixMatrix, colors []*Pix, thresh float64, width int)
 		}
 	}
 
-	// Cluster line pixels into lines
-	// rawLines := trace(pixLines, p)
-	// fmt.Println("Returning lines: ", len(rawLines))
-	return nil
-
 	// Scrub out lines that are most likely not lines
-	// outlines := filterLines(rawLines)
-	// return outlines
+	lines = filterLines(lines)
+
+	return
+}
+
+// Filter lines that dont look like actual lines
+// Note: density may also be a good measure of "lineiness"
+func filterLines(lines []*Line) (ret []*Line) {
+	for _, l := range lines {
+		if len(l.pixels) < 20 {
+			for _, p := range l.pixels {
+				p.ptype = PIX_CHUNK
+			}
+
+			continue
+		}
+
+		ret = append(ret, l)
+	}
+
+	return
 }
 
 func isClose(c *Pix, targets []*Pix, thresh float64) bool {
@@ -134,116 +121,4 @@ func isClose(c *Pix, targets []*Pix, thresh float64) bool {
 	}
 
 	return false
-}
-
-// Filter lines that dont look like actual lines
-func filterLines(lines []*Line) (ret []*Line) {
-	for _, l := range lines {
-		if len(l.pixels) < 100 {
-			for _, p := range l.pixels {
-				p.ptype = PIX_CHUNK
-			}
-
-			continue
-		}
-
-		ret = append(ret, l)
-	}
-
-	return
-}
-
-// returns all pixels within range d of target coordinates x, y
-// The pixel in the middle is included in results
-func neighbors(tX, tY, distance int, m *PixMatrix) (ret []*Pix) {
-	for x := tX - distance; x <= tX+distance; x++ {
-		if x < 0 || x > m.w {
-			continue
-		}
-
-		for y := tY - distance; y <= tY+distance; y++ {
-			if y < 0 || y > m.h {
-				continue
-			}
-
-			ret = append(ret, m.get(x, y))
-		}
-	}
-
-	return
-}
-
-// Like neighbors but only returns line pixels. (ptype == PIX_LINE)
-func neighborsCluster(tX, tY, distance int, i *PixMatrix) (ret []*Pix) {
-	for _, p := range neighbors(tX, tY, distance, i) {
-		if p.ptype == PIX_LINE {
-			ret = append(ret, p)
-		}
-	}
-
-	return
-}
-
-// Return matching pixels from chunk that are within thresh of the given color
-func scanChunk(chunk []*Pix, target *Pix, thresh float64) (ret []*Pix) {
-	for _, p := range chunk {
-		if d := colorDistance(p, target); d < thresh {
-			ret = append(ret, p)
-		}
-	}
-
-	return
-}
-
-// Mark chunk pixels in the matrix
-func markChunk(c *Pix, m *PixMatrix, neighbor []*Pix, width int, thresh float64) (chunkPixels []*Pix) {
-	for _, p := range neighbor {
-		chunkPixels = append(chunkPixels, p)
-		p.ptype = PIX_CHUNK
-	}
-
-	// extend the chunking to each of the neighboring pixels
-	for _, p := range neighbor {
-		for _, nearby := range neighbors(p.x, p.y, width, m) {
-			if distance := colorDistance(nearby, c); distance > thresh {
-				return
-			}
-		}
-	}
-
-	return
-}
-
-// Creates lines from pixels
-func cluster(mat *PixMatrix) (ret []*Line) {
-	mat.iter(func(x, y int, pix *Pix) {
-		// Ignore non-line pixels or already added pixels
-		if pix == nil || pix.ptype != PIX_LINE || pix.line != nil {
-			return
-		}
-
-		// Create a new line and a queue
-		q := []*Pix{pix}
-		line := NewLine(0)
-		ret = append(ret, line)
-
-		for len(q) > 0 {
-			// Pop the next pixel off the queue
-			next := q[0]
-			q = q[1:]
-
-			// continue if next already belongs to a line
-			if next.line != nil {
-				continue
-			}
-
-			// Add this pixel to the line
-			line.add(next)
-
-			// Queue this pixels neighbors
-			q = append(q, neighborsCluster(next.x, next.y, 1, mat)...)
-		}
-	})
-
-	return
 }
