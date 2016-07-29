@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"runtime"
 	"sync"
 	"time"
 
@@ -53,12 +52,11 @@ func runContinuously() {
 
 	go func(win *Window) {
 		for {
-			p := open("lowsett.png")
+			// p := open("lowsett.png")
 
 			// Benchmark
 			start := time.Now()
-			// mat := CaptureLeft()
-
+			p := CaptureLeft()
 			mat := convertImage(p)
 
 			lineify(mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
@@ -74,13 +72,10 @@ func runContinuously() {
 
 func main() {
 	fmt.Println("Tyrande starting")
-	runtime.GOMAXPROCS(runtime.NumCPU())
-
 	loadSwatch()
 
-	// runContinuously(swatch)
-	runScreencapOnce()
-
+	runContinuously()
+	// runScreencapOnce()
 	// runStaticOnce()
 
 	// sandbox()

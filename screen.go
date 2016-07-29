@@ -95,9 +95,8 @@ func CaptureRect(rect image.Rectangle) (image.Image, error) {
 	imageBytes := make([]byte, len(slice))
 
 	// ret := NewPixMatrix(x, y)
+	// Switching this to a matrix will save some time, but not a whole lot
 
-	// Um... this cant possibly work. How is it working? Has this version been tested?
-	// Have to do w/h calculation
 	for i := 0; i < len(imageBytes); i += 4 {
 		imageBytes[i], imageBytes[i+2], imageBytes[i+1], imageBytes[i+3] = slice[i+2], slice[i], slice[i+1], slice[i+3]
 		// p := &ret.arr[i/4]
