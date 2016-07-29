@@ -62,11 +62,11 @@ func (m *PixMatrix) adjacent(p *Pix, distance int) (ret []*Pix) {
 }
 
 // Returns adjacent pixels that are within thresh color of the given pixel
-func (m *PixMatrix) adjacentSimilarColor(p *Pix, distance int, thresh float64) (ret []*Pix) {
+func (m *PixMatrix) adjacentSimilarColor(p *Pix, target *Pix, distance int, thresh float64) (ret []*Pix) {
 	adj := m.adjacent(p, distance)
 
 	for _, n := range adj {
-		if colorDistance(p, n) < thresh {
+		if colorDistance(target, n) < thresh {
 			ret = append(ret, n)
 		}
 	}

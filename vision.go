@@ -21,7 +21,7 @@ TODO:
 
 func lineify(p *PixMatrix, colors []*Pix, thresh float64, width int) (lines []*Line) {
 	filltag := 0
-	fillThresh := 0.1
+	fillThresh := 0.3
 
 	for y := 0; y < p.h; y += 5 {
 		for x := 0; x < p.w; x += 5 {
@@ -39,7 +39,7 @@ func lineify(p *PixMatrix, colors []*Pix, thresh float64, width int) (lines []*L
 			}
 
 			// Get adjacents
-			adj := p.adjacentSimilarColor(current, 1, fillThresh)
+			adj := p.adjacentSimilarColor(current, current, 1, fillThresh)
 
 			// If this is a chunk continue
 			if len(adj) > 7 {
@@ -61,7 +61,7 @@ func lineify(p *PixMatrix, colors []*Pix, thresh float64, width int) (lines []*L
 				q = q[1:]
 
 				// Get neighbors that are of a similar color
-				adj := p.adjacentSimilarColor(pix, 1, fillThresh)
+				adj := p.adjacentSimilarColor(pix, current, 1, fillThresh)
 
 				// Stop immediately if a chunk is found
 				if len(adj) > 7 {
@@ -93,7 +93,7 @@ func lineify(p *PixMatrix, colors []*Pix, thresh float64, width int) (lines []*L
 // Note: density may also be a good measure of "lineiness"
 func filterLines(lines []*Line) (ret []*Line) {
 	for _, l := range lines {
-		if len(l.pixels) < 20 {
+		if len(l.pixels) < 150 {
 			for _, p := range l.pixels {
 				p.ptype = PIX_CHUNK
 			}

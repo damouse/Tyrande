@@ -14,7 +14,7 @@ var (
 	COLOR_THRESHOLD float64 = 0.2
 	LINE_WIDTH      int     = 1
 
-	DEBUG_DRAW_CHUNKS = true  // draw the rejected color matches on the resulting debug image
+	DEBUG_DRAW_CHUNKS = false // draw the rejected color matches on the resulting debug image
 	CACHE_LUV         = false // Cache luv processing (NOTE: this fucks with the colors!) implementation is not correct
 
 	luvCache    = map[uint32]colorful.Color{}

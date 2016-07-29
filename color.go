@@ -50,9 +50,9 @@ func NewPix(x, y int, c color.Color) *Pix {
 		Color:    c,
 		x:        x,
 		y:        y,
-		r:        0,
-		g:        0,
-		b:        0,
+		r:        0.0,
+		g:        0.0,
+		b:        0.0,
 		line:     nil,
 		lazyInit: false,
 		ptype:    PIX_NOTHING,
@@ -62,11 +62,11 @@ func NewPix(x, y int, c color.Color) *Pix {
 
 // Trigger the lazy initializer for this pixels luv color
 func (p *Pix) initLuv() {
-	var l, u, v float64
-
 	if p.lazyInit {
 		return
 	}
+
+	var l, u, v float64
 
 	if CACHE_LUV {
 		i := slide(p.Color)
@@ -135,10 +135,6 @@ func convertToColorful(c color.Color) colorful.Color {
 func colorDistance(a, b *Pix) float64 {
 	a.initLuv()
 	b.initLuv()
-
-	// if a == nil || b == nil {
-	// 	return 1.5
-	// }
 
 	return math.Sqrt(sq(a.r-b.r) + sq(a.g-b.g) + sq(a.b-b.b))
 }
