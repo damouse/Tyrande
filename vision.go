@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"time"
 )
@@ -11,34 +10,29 @@ func vision() {
 	var p image.Image
 	var start time.Time
 
-	for {
-		start = time.Now()
+	start = time.Now()
 
-		if !running {
-			fmt.Println("VIS Stopped")
-			return
-		}
-
-		if DEBUG_STATIC {
-			p = imageStatic
-		} else {
-			p = CaptureLeft()
-		}
-
-		mat := convertImage(p)
-		lines := lineify(mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
-
-		if DEBUG_SAVE_LINES {
-			go mat.save("huntress.png")
-		}
-
-		if DEBUG_WINDOW {
-			go window.show(mat.toImage())
-		}
-
-		bench("VIS", start)
-		visionChan <- lines
+	if DEBUG_STATIC {
+		p = imageStatic
+	} else {
+		p = CaptureLeft()
 	}
+
+	mat := convertImage(p)
+	updateCenter(mat)
+
+	lines := lineify(mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
+
+	if DEBUG_SAVE_LINES {
+		go mat.save("huntress.png")
+	}
+
+	if DEBUG_WINDOW {
+		go window.show(mat.toImage())
+	}
+
+	bench("VIS", start)
+	visionChan <- lines
 }
 
 func lineify(p *PixMatrix, colors []*Pix, thresh float64, width int) (lines []*Line) {
@@ -122,6 +116,11 @@ func isClose(c *Pix, targets []*Pix, thresh float64) bool {
 	}
 
 	return false
+}
+
+// Update center of screen coordinates
+func updateCenter(mat *PixMatrix) {
+	centerVector.x, centerVector.y = mat.center()
 }
 
 // We can use this to bound the search distance for the sake of performance

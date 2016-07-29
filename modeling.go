@@ -11,38 +11,34 @@ type Line struct {
 
 type Character struct {
 	*Line
+	offset Vector // vector from this char to the center of the screen
 }
 
 // Gets updates from vision and updates characters
 func modeling() {
-	for {
-		if !running {
-			return
-		}
+	lines := <-visionChan
+	start := time.Now()
 
-		lines := <-visionChan
-		start := time.Now()
+	lines = filterLines(lines)
 
-		lines = filterLines(lines)
-
-		for _, l := range lines {
-			l.process()
-		}
-
-		// Update the list of characters
-		var chars []*Character
-
-		for _, l := range lines {
-			chars = append(chars, &Character{l})
-		}
-
-		bench("MOD", start)
-
-		// Update shared store
-		characterLock.Lock()
-		characters = chars
-		characterLock.Unlock()
+	for _, l := range lines {
+		l.process()
 	}
+
+	// Update the list of characters
+	var chars []*Character
+
+	for _, l := range lines {
+		chars = append(chars, &Character{l, Vector{}})
+	}
+
+	bench("MOD", start)
+
+	// Update shared store
+	characterLock.Lock()
+	characters = chars
+	characterLock.Unlock()
+
 }
 
 // Calculate statistics about this line
@@ -95,18 +91,18 @@ func filterLines(lines []*Line) (ret []*Line) {
 //
 // Targeting
 // Return the line whose center is closest to the screen center. If no lines passed, returns nil
-func closestCenter(lines []*Line, centerX, centerY int) (ret *Line) {
+func closestCenter(chars []*Character, center Vector) (ret *Character) {
 	closest := 10000.0
 
-	for _, l := range lines {
-		dist := euclideanDistance(l.centerX, l.centerY, centerX, centerY)
+	for _, char := range chars {
+		l := char.Line
+		char.offset = Vector{center.x - ret.centerX, center.y - ret.centerY}
+		dist := euclideanDistance(l.centerX, l.centerY, center.x, center.y)
 
 		if dist < closest {
 			closest = dist
-			ret = l
+			ret = char
 		}
-
-		// fmt.Println("Center: ", l.centerX, l.centerY, dist)
 	}
 
 	return

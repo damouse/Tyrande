@@ -12,9 +12,9 @@ import (
 // https://play.golang.org/p/kwfYDhhiqk
 
 func output() {
-	if !running {
-		return
-	}
+
+	// movement := <-outputChan
+
 }
 
 type Vector struct {

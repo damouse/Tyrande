@@ -38,52 +38,66 @@ var (
 
 // Main Logic globals
 var (
-	running      bool
-	target       *Character
-	targetVector Vector
+	running   bool
+	targeting bool
+	target    *Character
 
-	visionChan = make(chan []*Line, 10)
+	closingChan = make(chan bool, 0)
+	visionChan  = make(chan []*Line, 10)
+	outputChan  = make(chan Vector, 10)
 
 	characters    []*Character
 	characterLock = &sync.RWMutex{}
 
+	centerVector Vector
+	targetVector Vector
 	outputVector Vector
 )
 
 // Main loop
 func hunt() {
-	for {
-		if !running {
-			return
-		}
+	// start := time.Now()
 
-		// start := time.Now()
+	// Returns true if left alt is pressed, signifying we should track
+	if input() {
+		characterLock.RLock()
+		target = closestCenter(characters, centerVector)
+		characterLock.RUnlock()
 
-		// Returns true if left alt is pressed, signifying we should track
-		if input() {
+		// If target vector is not set we're tracking but not targeting.
+		// In the future the output vector will only be fired if we're aligning
 
-		}
-
-		time.Sleep(POLL_TIME)
-		// bench("TYR", start)
+		// Fire off the output vector
+		outputVector = target.offset
+		// outputChan <- outputVector
 	}
+
+	// bench("TYR", start)
+
+	if !running {
+		return
+	}
+
+	time.Sleep(POLL_TIME)
+
 }
 
-// Kick off the four processing goroutines
 func start() {
 	fmt.Println("TYR Starting")
-
 	running = true
 
-	go vision()
-	go modeling()
-	go output()
-	hunt()
+	startRoutine(vision)
+	startRoutine(modeling)
+	// startRoutine(output)
+	startRoutine(hunt)
+
+	<-closingChan
 }
 
 func stop() {
 	fmt.Println("TYR Stopped")
 	running = false
+	closingChan <- true
 }
 
 func main() {

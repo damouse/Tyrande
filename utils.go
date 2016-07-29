@@ -92,3 +92,15 @@ func bench(name string, start time.Time) {
 		fmt.Printf("%s \t%s\n", name, time.Since(start))
 	}
 }
+
+func startRoutine(fn func()) {
+	go func() {
+		for {
+			fn()
+
+			if !running {
+				break
+			}
+		}
+	}()
+}
