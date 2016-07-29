@@ -91,7 +91,7 @@ func lineifyExperimental(p *PixMatrix, colors []*Pix, thresh float64, width int)
 				if len(adj) == 8 {
 					pix.ptype = PIX_CHUNK
 
-					for _, p := range p.adjacentSimilarColor(pix, 3, fillThresh) {
+					for _, p := range p.adjacent(pix, 3) {
 						p.ptype = PIX_CHUNK
 					}
 				} else if pix.ptype != PIX_CHUNK {
