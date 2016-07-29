@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/AllenDang/w32"
-	"github.com/lxn/win"
 )
 
 // Input and output manipulation
@@ -22,25 +21,22 @@ type Vector struct {
 }
 
 // Moves to the given coordinates
-func moveTo(x, y int) {
-	// time.Sleep(1000 * time.Millisecond)
+func moveTo(t Vector) {
+	dx := -t.x
+	dy := -t.y
 
-	p := win.POINT{}
-	win.GetCursorPos(&p)
-
-	dx := x - int(p.X)
-	dy := y - int(p.Y)
+	// debug("Output: %d %d", dx, dy)
 
 	// milliseconds?
 	// duration := 1000
-	cycles := 100
+	cycles := 30
 
 	lx := float64(dx) / float64(cycles)
 	ly := float64(dy) / float64(cycles)
 
 	for i := 0; i < cycles; i++ {
 		moveRelative(int(lx), int(ly))
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(1 * time.Millisecond)
 	}
 }
 

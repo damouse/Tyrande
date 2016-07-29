@@ -41,8 +41,8 @@ func (w *Window) refresh(i image.Image) {
 func (w *Window) wait() {
 	for {
 		key := opencv.WaitKey(20)
-		if key == 27 {
-			os.Exit(0)
+		if key == 112 {
+			return
 		}
 	}
 }

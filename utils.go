@@ -6,6 +6,16 @@ import (
 	"time"
 )
 
+func debug(s string, args ...interface{}) {
+	if DEBUG_LOG {
+		fmt.Printf(s+"\n", args...)
+	}
+}
+
+func log(s string, args ...interface{}) {
+	fmt.Printf(s+"\n", args...)
+}
+
 // Tasks
 func staticOnce() {
 	p := open("retry.png")

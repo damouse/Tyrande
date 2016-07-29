@@ -11,7 +11,7 @@ import (
 
 // Settings
 var (
-	COLOR_THRESHOLD = 0.2
+	COLOR_THRESHOLD = 0.15
 	LINE_WIDTH      = 1
 	SWATCH          []*Pix
 	POLL_TIME       = 100 * time.Millisecond
@@ -21,9 +21,10 @@ var (
 
 	DEBUG_DRAW_CHUNKS   = false
 	DEBUG_SAVE_LINES    = false
-	DEBUG_STATIC        = true  // if true sources image from DEBUG_SOURCE below instead of screen
-	DEBUG_WINDOW        = false // display a window of the running capture
-	DEBUG_BENCH         = true
+	DEBUG_STATIC        = false // if true sources image from DEBUG_SOURCE below instead of screen
+	DEBUG_WINDOW        = true  // display a window of the running capture
+	DEBUG_BENCH         = false
+	DEBUG_LOG           = true
 	DEBUG_SOURCE_STATIC = "lowsett.png"
 )
 
@@ -59,17 +60,25 @@ func hunt() {
 	// start := time.Now()
 
 	// Returns true if left alt is pressed, signifying we should track
-	if input() {
+	altPressed := input()
+
+	// Update targeting state
+	if targeting != altPressed {
+		targeting = altPressed
+		// debug("Targeting %v", targeting)
+	}
+
+	// Track to the closest char
+	if targeting {
 		characterLock.RLock()
 		target = closestCenter(characters, centerVector)
 		characterLock.RUnlock()
 
-		// If target vector is not set we're tracking but not targeting.
-		// In the future the output vector will only be fired if we're aligning
-
-		// Fire off the output vector
-		outputVector = target.offset
-		// outputChan <- outputVector
+		// This is "tracking"
+		if target != nil {
+			outputVector = target.offset
+			moveTo(outputVector)
+		}
 	}
 
 	// bench("TYR", start)
@@ -79,7 +88,6 @@ func hunt() {
 	}
 
 	time.Sleep(POLL_TIME)
-
 }
 
 func start() {
@@ -90,6 +98,10 @@ func start() {
 	startRoutine(modeling)
 	// startRoutine(output)
 	startRoutine(hunt)
+
+	if DEBUG_WINDOW {
+		window.wait()
+	}
 
 	<-closingChan
 }

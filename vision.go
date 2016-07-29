@@ -28,7 +28,8 @@ func vision() {
 	}
 
 	if DEBUG_WINDOW {
-		go window.show(mat.toImage())
+		lines = filterLines(lines)
+		window.show(mat.toImage())
 	}
 
 	bench("VIS", start)
@@ -37,7 +38,7 @@ func vision() {
 
 func lineify(p *PixMatrix, colors []*Pix, thresh float64, width int) (lines []*Line) {
 	filltag := 0
-	fillThresh := 0.3
+	fillThresh := 0.4
 
 	for y := 0; y < p.h; y += 5 {
 		for x := 0; x < p.w; x += 5 {

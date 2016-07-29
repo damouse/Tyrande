@@ -34,6 +34,10 @@ func modeling() {
 
 	bench("MOD", start)
 
+	if len(characters) != len(chars) {
+		// log("MOD %d chars", len(chars))
+	}
+
 	// Update shared store
 	characterLock.Lock()
 	characters = chars
@@ -96,7 +100,9 @@ func closestCenter(chars []*Character, center Vector) (ret *Character) {
 
 	for _, char := range chars {
 		l := char.Line
-		char.offset = Vector{center.x - ret.centerX, center.y - ret.centerY}
+		// fmt.Println(center, ret)
+
+		char.offset = Vector{center.x - char.centerX, center.y - char.centerY}
 		dist := euclideanDistance(l.centerX, l.centerY, center.x, center.y)
 
 		if dist < closest {
