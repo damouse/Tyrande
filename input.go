@@ -16,9 +16,9 @@ import (
 // https://play.golang.org/p/kwfYDhhiqk
 
 func windowsAPI() {
-	// time.Sleep(1000 * time.Millisecond)
+	time.Sleep(1000 * time.Millisecond)
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 100; i++ {
 		p := win.POINT{}
 		win.GetCursorPos(&p)
 		fmt.Printf("Current position: %v\n", p)
@@ -56,12 +56,12 @@ func windowsAPI() {
 		inputs = append(inputs, w32.INPUT{
 			Type: w32.INPUT_MOUSE,
 			Mi: w32.MOUSEINPUT{
-				Dx:          100,                                             //int32
-				Dy:          100,                                             //int32
-				MouseData:   0,                                               //uint32
-				DwFlags:     win.MOUSEEVENTF_ABSOLUTE | win.MOUSEEVENTF_MOVE, //uint32
-				Time:        1,                                               //uint32
-				DwExtraInfo: 0,                                               //uintptr
+				Dx:          1, //int32
+				Dy:          1, //int32
+				MouseData:   0, //uint32
+				DwFlags:     1, //uint32
+				Time:        0, //uint32
+				DwExtraInfo: 0, //uintptr
 			},
 		})
 
