@@ -1,24 +1,5 @@
 package main
 
-// -- Modeling
-// Merge close lines
-// Determine a center
-// Determine a top
-
-// We can use this to bound the search distance for the sake of performance
-// halfX := img.Bounds().Max.X / 3
-// halfY := img.Bounds().Max.Y / 3
-
-// if x < halfX || x > halfX*2 || y < halfY || y > halfY*2 {
-// 	return
-// }
-/*
-TODO:
-	Clean pipeline
-	Test live
-	Hunting performance
-*/
-
 func lineify(p *PixMatrix, colors []*Pix, thresh float64, width int) (lines []*Line) {
 	filltag := 0
 	fillThresh := 0.3
@@ -47,7 +28,7 @@ func lineify(p *PixMatrix, colors []*Pix, thresh float64, width int) (lines []*L
 			}
 
 			// Create a new line object
-			line := NewLine(0)
+			line := &Line{}
 			lines = append(lines, line)
 
 			// Begin fill loop
@@ -86,6 +67,10 @@ func lineify(p *PixMatrix, colors []*Pix, thresh float64, width int) (lines []*L
 	// Scrub out lines that are most likely not lines
 	lines = filterLines(lines)
 
+	for _, l := range lines {
+		l.process()
+	}
+
 	return
 }
 
@@ -122,3 +107,10 @@ func isClose(c *Pix, targets []*Pix, thresh float64) bool {
 
 	return false
 }
+
+// We can use this to bound the search distance for the sake of performance
+// halfX := img.Bounds().Max.X / 3
+// halfY := img.Bounds().Max.Y / 3
+// if x < halfX || x > halfX*2 || y < halfY || y > halfY*2 {
+// 	return
+// }

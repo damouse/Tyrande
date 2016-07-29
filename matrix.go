@@ -28,6 +28,10 @@ func (m *PixMatrix) set(v *Pix) {
 	m.arr[v.y*m.w+v.x] = *v
 }
 
+func (m *PixMatrix) center() (int, int) {
+	return m.w / 2, m.h / 2
+}
+
 // Get the adjacent pixels to the given pixel that are within distance in x and y
 // The given pixel is not returned
 func (m *PixMatrix) adjacent(p *Pix, distance int) (ret []*Pix) {

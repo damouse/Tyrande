@@ -26,9 +26,16 @@ func benchCaptures() {
 }
 
 // Math utils
-func euclideanDistance(a Pix, b Pix) float64 {
-	dx := float64(a.x) - float64(b.x)
-	dy := float64(a.y) - float64(b.y)
+// func euclideanDistance(a Pix, b Pix) float64 {
+// 	dx := float64(a.x) - float64(b.x)
+// 	dy := float64(a.y) - float64(b.y)
+
+// 	return math.Sqrt(dx*dx + dy*dy)
+// }
+
+func euclideanDistance(x1, y1, x2, y2 int) float64 {
+	dx := float64(x1) - float64(x2)
+	dy := float64(y1) - float64(y2)
 
 	return math.Sqrt(dx*dx + dy*dy)
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/lucasb-eyer/go-colorful"
 )
 
-// Global running settings
+// Global settings
 var (
 	COLOR_THRESHOLD float64 = 0.2
 	LINE_WIDTH      int     = 1
@@ -21,47 +21,51 @@ var (
 
 	CONVERTING_GOROUTINES = 8 // Number of concurrent workers for converting rgb -> LUV
 
-	SWATCH []*Pix
+	SWATCH []*Pix // colors to check against
 )
 
-func runStaticOnce() {
-	p := open("retry.png")
-
+//
+// Main loop
+func hunt(mat *PixMatrix) {
 	start := time.Now()
-	mat := convertImage(p)
-	lineify(mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
+
+	lines := lineify(mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
+
+	cX, cY := mat.center()
+	closestCenter(lines, cX, cY)
+
+	//
 
 	fmt.Printf("Hunt completed in: %s\n", time.Since(start))
+}
 
+//
+// Tasks
+func staticOnce() {
+	p := open("retry.png")
+	mat := convertImage(p)
+
+	hunt(mat)
 	mat.save("huntress.png")
 }
 
-func runScreencapOnce() {
-	start := time.Now()
-
+func screencapOnce() {
 	p := CaptureLeft()
 	mat := convertImage(p)
-	lineify(mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
 
-	fmt.Printf("Hunt completed in: %s\n", time.Since(start))
+	hunt(mat)
 	mat.save("huntress.png")
 }
 
-func runContinuously() {
+func continuouslyWindowed() {
 	w := NewWindow()
 
 	go func(win *Window) {
 		for {
-			// p := open("lowsett.png")
-
-			// Benchmark
-			start := time.Now()
 			p := CaptureLeft()
 			mat := convertImage(p)
 
-			lineify(mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
-
-			fmt.Printf("Hunt completed in: %s\n", time.Since(start))
+			hunt(mat)
 
 			w.show(mat.toImage())
 		}
@@ -74,20 +78,9 @@ func main() {
 	fmt.Println("Tyrande starting")
 	loadSwatch()
 
-	runContinuously()
-	// runScreencapOnce()
-	// runStaticOnce()
+	// continuouslyWindowed()
+	// screencapOnce()
+	// staticOnce()
 
-	// sandbox()
-}
-
-type Alpha struct {
-	a int
-}
-
-func sandbox() {
-	fmt.Println("Hello")
-
-	slicer := make([]Alpha, 3)
-	fmt.Println(slicer[2])
+	windowsAPI()
 }

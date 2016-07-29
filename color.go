@@ -18,13 +18,6 @@ const (
 	PIX_VISITED
 )
 
-// Modeling and detecting on-screen players
-type Line struct {
-	pixels []*Pix
-	id     int
-	cX, cY int // center
-}
-
 type Pix struct {
 	color.Color
 
@@ -86,33 +79,6 @@ func (p *Pix) initLuv() {
 	p.b = v
 
 	p.lazyInit = true
-}
-
-//
-// Line
-func NewLine(id int) *Line {
-	return &Line{
-		[]*Pix{},
-		id,
-		0,
-		0,
-	}
-}
-
-func (l *Line) add(p *Pix) {
-	l.pixels = append(l.pixels, p)
-}
-
-func (l *Line) addAll(p []*Pix) {
-	for _, a := range p {
-		l.add(a)
-	}
-}
-
-func (l *Line) merge(o *Line) {
-	for _, p := range o.pixels {
-		l.add(p)
-	}
 }
 
 //
