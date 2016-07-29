@@ -1,5 +1,16 @@
 package main
 
+// Gets updates from vision and updates characters
+func modeling() {
+	if !running {
+		return
+	}
+}
+
+type Character struct {
+	*Line
+}
+
 // Modeling and detecting on-screen players
 type Line struct {
 	pixels []*Pix

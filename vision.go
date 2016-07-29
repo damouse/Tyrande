@@ -1,5 +1,48 @@
 package main
 
+import (
+	"fmt"
+	"image"
+	"time"
+)
+
+// Main event loop. Continuously captures the screen and places results into visionQ for the main loop to pick up
+func vision() {
+	var p image.Image
+	var start time.Time
+
+	for {
+		start = time.Now()
+
+		if !running {
+			fmt.Println("VIS Stopped")
+			return
+		}
+
+		if DEBUG_STATIC {
+			p = imageStatic
+		} else {
+			p = CaptureLeft()
+		}
+
+		mat := convertImage(p)
+		lines := lineify(mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
+
+		if DEBUG_SAVE_LINES {
+			go mat.save("huntress.png")
+		}
+
+		if DEBUG_WINDOW {
+			go window.show(mat.toImage())
+		}
+
+		visionChan <- lines
+		// running = false
+
+		fmt.Printf("VIS \t%s\n", time.Since(start))
+	}
+}
+
 func lineify(p *PixMatrix, colors []*Pix, thresh float64, width int) (lines []*Line) {
 	filltag := 0
 	fillThresh := 0.3
