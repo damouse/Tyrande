@@ -13,15 +13,17 @@ import (
 var (
 	COLOR_THRESHOLD = 0.2
 	LINE_WIDTH      = 1
-	SWATCH          []*Pix // colors to check against
+	SWATCH          []*Pix
+	POLL_TIME       = 100 * time.Millisecond
 
 	CONVERTING_GOROUTINES = 8    // Number of concurrent workers for converting rgb -> LUV
-	CACHE_LUV             = true // Cache luv processing (NOTE: this fucks with the colors!) implementation is not correct
+	CACHE_LUV             = true // Cache luv processing implementation not correct
 
 	DEBUG_DRAW_CHUNKS   = false
 	DEBUG_SAVE_LINES    = false
 	DEBUG_STATIC        = true  // if true sources image from DEBUG_SOURCE below instead of screen
 	DEBUG_WINDOW        = false // display a window of the running capture
+	DEBUG_BENCH         = true
 	DEBUG_SOURCE_STATIC = "lowsett.png"
 )
 
@@ -49,15 +51,21 @@ var (
 )
 
 // Main loop
-func hunte() {
+func hunt() {
 	for {
-		// Check for input updates
+		if !running {
+			return
+		}
 
-		// Check for close
+		// start := time.Now()
 
-		// Targeting logic
+		// Returns true if left alt is pressed, signifying we should track
+		if input() {
 
-		// Update output if needed
+		}
+
+		time.Sleep(POLL_TIME)
+		// bench("TYR", start)
 	}
 }
 
@@ -67,62 +75,15 @@ func start() {
 
 	running = true
 
-	vision()
-	// go modeling()
-	// go output()
-	// hunte()
+	go vision()
+	go modeling()
+	go output()
+	hunt()
 }
 
-func hunt(mat *PixMatrix) {
-	lineify(mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
-
-	// cX, cY := mat.center()
-	// closest := closestCenter(lines, cX, cY)
-
-	// moveTo(closest.centerX, closest.centerY)
-}
-
-// Tasks
-func staticOnce() {
-	p := open("retry.png")
-
-	start := time.Now()
-
-	mat := convertImage(p)
-
-	hunt(mat)
-	mat.save("huntress.png")
-
-	fmt.Printf("Hunt completed in: %s\n", time.Since(start))
-}
-
-func screencapOnce() {
-	p := CaptureLeft()
-	mat := convertImage(p)
-
-	hunt(mat)
-
-	mat.save("huntress.png")
-}
-
-func continuouslyWindowed() {
-	w := NewWindow()
-
-	go func(win *Window) {
-		for {
-			start := time.Now()
-
-			p := CaptureLeft()
-			mat := convertImage(p)
-
-			hunt(mat)
-
-			fmt.Printf("Hunt completed in: %s\n", time.Since(start))
-			w.show(mat.toImage())
-		}
-	}(w)
-
-	w.wait()
+func stop() {
+	fmt.Println("TYR Stopped")
+	running = false
 }
 
 func main() {
@@ -137,8 +98,6 @@ func main() {
 	}
 
 	start()
-
-	// window.wait()
 
 	// continuouslyWindowed()
 	// screencapOnce()

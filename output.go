@@ -8,10 +8,7 @@ import (
 )
 
 // Input and output manipulation
-// This whole API comes from here: https://github.com/lxn/win
-// docs: https://godoc.org/github.com/lxn/win
-
-// If we cant get this working directly check out this lib:
+// https://godoc.org/github.com/lxn/win
 // https://play.golang.org/p/kwfYDhhiqk
 
 func output() {

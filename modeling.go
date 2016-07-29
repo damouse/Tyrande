@@ -1,17 +1,7 @@
 package main
 
-// Gets updates from vision and updates characters
-func modeling() {
-	if !running {
-		return
-	}
-}
+import "time"
 
-type Character struct {
-	*Line
-}
-
-// Modeling and detecting on-screen players
 type Line struct {
 	pixels []*Pix
 
@@ -19,19 +9,39 @@ type Line struct {
 	maxX, maxY, minX, minY int
 }
 
-func (l *Line) add(p *Pix) {
-	l.pixels = append(l.pixels, p)
+type Character struct {
+	*Line
 }
 
-func (l *Line) addAll(p []*Pix) {
-	for _, a := range p {
-		l.add(a)
-	}
-}
+// Gets updates from vision and updates characters
+func modeling() {
+	for {
+		if !running {
+			return
+		}
 
-func (l *Line) merge(o *Line) {
-	for _, p := range o.pixels {
-		l.add(p)
+		lines := <-visionChan
+		start := time.Now()
+
+		lines = filterLines(lines)
+
+		for _, l := range lines {
+			l.process()
+		}
+
+		// Update the list of characters
+		var chars []*Character
+
+		for _, l := range lines {
+			chars = append(chars, &Character{l})
+		}
+
+		bench("MOD", start)
+
+		// Update shared store
+		characterLock.Lock()
+		characters = chars
+		characterLock.Unlock()
 	}
 }
 
@@ -64,6 +74,24 @@ func (l *Line) process() {
 	l.centerY = sumY / len(l.pixels)
 }
 
+// Filter lines that dont look like actual lines
+// Note: density may also be a good measure of "lineiness"
+func filterLines(lines []*Line) (ret []*Line) {
+	for _, l := range lines {
+		if len(l.pixels) < 150 {
+			for _, p := range l.pixels {
+				p.ptype = PIX_CHUNK
+			}
+
+			continue
+		}
+
+		ret = append(ret, l)
+	}
+
+	return
+}
+
 //
 // Targeting
 // Return the line whose center is closest to the screen center. If no lines passed, returns nil
@@ -82,4 +110,21 @@ func closestCenter(lines []*Line, centerX, centerY int) (ret *Line) {
 	}
 
 	return
+}
+
+// Lines
+func (l *Line) add(p *Pix) {
+	l.pixels = append(l.pixels, p)
+}
+
+func (l *Line) addAll(p []*Pix) {
+	for _, a := range p {
+		l.add(a)
+	}
+}
+
+func (l *Line) merge(o *Line) {
+	for _, p := range o.pixels {
+		l.add(p)
+	}
 }

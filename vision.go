@@ -36,10 +36,8 @@ func vision() {
 			go window.show(mat.toImage())
 		}
 
+		bench("VIS", start)
 		visionChan <- lines
-		// running = false
-
-		fmt.Printf("VIS \t%s\n", time.Since(start))
 	}
 }
 
@@ -105,31 +103,6 @@ func lineify(p *PixMatrix, colors []*Pix, thresh float64, width int) (lines []*L
 				}
 			}
 		}
-	}
-
-	// Scrub out lines that are most likely not lines
-	lines = filterLines(lines)
-
-	for _, l := range lines {
-		l.process()
-	}
-
-	return
-}
-
-// Filter lines that dont look like actual lines
-// Note: density may also be a good measure of "lineiness"
-func filterLines(lines []*Line) (ret []*Line) {
-	for _, l := range lines {
-		if len(l.pixels) < 150 {
-			for _, p := range l.pixels {
-				p.ptype = PIX_CHUNK
-			}
-
-			continue
-		}
-
-		ret = append(ret, l)
 	}
 
 	return
