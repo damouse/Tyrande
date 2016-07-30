@@ -90,7 +90,9 @@ func start() {
 	fmt.Println("TYR Starting")
 	running = true
 
-	startRoutineTime(vision)
+	// startRoutineTime(vision)
+
+	startRoutine(vision)
 	startRoutine(modeling)
 	// startRoutine(output)
 	startRoutine(hunt)
