@@ -74,7 +74,7 @@ func (m *PixMatrix) save(n string) {
 	save(m.toImage(), n)
 }
 
-func (m *PixMatrix) toImage() image.Image {
+func (m *PixMatrix) toImage() *image.NRGBA {
 	ret := image.NewNRGBA(image.Rect(0, 0, m.w, m.h))
 
 	for y := 0; y < m.h; y++ {
@@ -91,10 +91,12 @@ func (m *PixMatrix) toImage() image.Image {
 				ret.Set(x, y, p.Color)
 
 			} else {
-				// ret.Set(x, y, p.Color)
-
-				r, g, b, _ := p.Color.RGBA()
-				ret.Set(x, y, color.RGBA{uint8(float64(r) / 65535.0 * 25), uint8(float64(g) / 65535.0 * 25), uint8(float64(b) / 65535.0 * 25), 255})
+				if DEBUG_DARKEN {
+					r, g, b, _ := p.Color.RGBA()
+					ret.Set(x, y, color.RGBA{uint8(float64(r) / 65535.0 * 25), uint8(float64(g) / 65535.0 * 25), uint8(float64(b) / 65535.0 * 25), 255})
+				} else {
+					ret.Set(x, y, p.Color)
+				}
 			}
 		}
 	}

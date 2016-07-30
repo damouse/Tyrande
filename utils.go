@@ -2,18 +2,19 @@ package main
 
 import (
 	"fmt"
+	"image/color"
 	"math"
 	"time"
 )
 
-func debug(s string, args ...interface{}) {
-	if DEBUG_LOG {
-		fmt.Printf(s+"\n", args...)
-	}
-}
+type Cycle struct {
+	mat   *PixMatrix
+	lines []*Line
+	chars []*Character
 
-func log(s string, args ...interface{}) {
-	fmt.Printf(s+"\n", args...)
+	start, vision, model time.Time
+
+	center Vector
 }
 
 // Called at the end of cycle operation. Also save the numbers and average them out for later
@@ -30,6 +31,32 @@ func (op *Cycle) bench() {
 	if DEBUG_BENCH {
 		fmt.Printf("Cycle: \t%s\t%s\t%s\n", total, vis, mod)
 	}
+}
+
+func (op Cycle) save(name string) {
+	i := op.mat.toImage()
+
+	// draw the center
+	m := &Pix{}
+	m.x = op.center.x
+	m.y = op.center.y
+
+	for _, p := range op.mat.adjacent(m, 1) {
+		// fmt.Println(p.x, p)
+		i.Set(p.x, p.y, color.NRGBA{0, 255, 255, 255})
+	}
+
+	save(i, name)
+}
+
+func debug(s string, args ...interface{}) {
+	if DEBUG_LOG {
+		fmt.Printf(s+"\n", args...)
+	}
+}
+
+func log(s string, args ...interface{}) {
+	fmt.Printf(s+"\n", args...)
 }
 
 // Tasks
@@ -81,27 +108,7 @@ func checkError(err error) {
 	}
 }
 
-// OLD SAMPLE CODE:
-func benchCaptures() {
-	start := time.Now()
-	iterations := 20
-
-	for i := 0; i < iterations; i++ {
-		_, err := CaptureScreen()
-		checkError(err)
-	}
-
-	fmt.Printf("%d shots took %s", iterations, time.Since(start))
-}
-
 // Math utils
-// func euclideanDistance(a Pix, b Pix) float64 {
-// 	dx := float64(a.x) - float64(b.x)
-// 	dy := float64(a.y) - float64(b.y)
-
-// 	return math.Sqrt(dx*dx + dy*dy)
-// }
-
 func euclideanDistance(x1, y1, x2, y2 int) float64 {
 	dx := float64(x1) - float64(x2)
 	dy := float64(y1) - float64(y2)

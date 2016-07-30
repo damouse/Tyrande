@@ -21,7 +21,7 @@ func vision() {
 	op.lines = lineify(op.mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
 	op.vision = time.Now()
 
-	updateCenter(op.mat)
+	updateCenter(&op)
 	visionChan <- op
 }
 
@@ -108,8 +108,17 @@ func isClose(c *Pix, targets []*Pix, thresh float64) bool {
 }
 
 // Update center of screen coordinates
-func updateCenter(mat *PixMatrix) {
-	centerVector.x, centerVector.y = mat.center()
+func updateCenter(op *Cycle) {
+	x, y := op.mat.center()
+
+	x += CENTER_OFFSET.x
+	y += CENTER_OFFSET.y
+
+	centerVector.x = x
+	centerVector.y = y
+
+	op.center.x = x
+	op.center.y = y
 }
 
 // We can use this to bound the search distance for the sake of performance

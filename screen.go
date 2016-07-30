@@ -32,7 +32,7 @@ func CaptureScreen() (image.Image, error) {
 }
 
 func CaptureLeft() image.Image {
-	i, _ := CaptureRect(image.Rect(0, 0, 2100, 1440))
+	i, _ := CaptureRect(LEFT_SCREEN_DIM)
 	return i
 }
 

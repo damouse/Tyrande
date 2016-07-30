@@ -35,8 +35,13 @@ type Pix struct {
 }
 
 func index(c color.Color) uint32 {
-	cast := c.(color.NRGBA)
-	return (uint32(cast.R) << 16) | (uint32(cast.G) << 8) | uint32(cast.B)
+	if cast, ok := c.(color.NRGBA); ok {
+		return (uint32(cast.R) << 16) | (uint32(cast.G) << 8) | uint32(cast.B)
+	} else if cast, ok := c.(color.RGBA); ok {
+		return (uint32(cast.R) << 16) | (uint32(cast.G) << 8) | uint32(cast.B)
+	} else {
+		panic("Unknown color type!")
+	}
 }
 
 //

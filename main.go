@@ -3,25 +3,16 @@ package main
 import (
 	"fmt"
 	"image"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/lucasb-eyer/go-colorful"
 )
 
-type Cycle struct {
-	mat   *PixMatrix
-	lines []*Line
-	chars []*Character
-
-	start  time.Time
-	vision time.Time
-	model  time.Time
-}
-
 var (
 	// Settings
-	COLOR_THRESHOLD = 0.15
+	COLOR_THRESHOLD = 0.2
 	LINE_WIDTH      = 1
 	SWATCH          []*Pix
 	POLL_TIME       = 100 * time.Millisecond
@@ -30,23 +21,25 @@ var (
 	NUM_PARALLEL = 2
 	CACHE_LUV    = true
 
+	LEFT_SCREEN_DIM = image.Rect(0, 32, 2180, 1380)
+	CENTER_OFFSET   = Vector{5, 9} // Where the retircle is wrt the screencap /2
+
 	// Debugging Settings
 	DEBUG_DRAW_CHUNKS = false
 	DEBUG_SAVE_LINES  = false
+	DEBUG_DARKEN      = true
 	DEBUG_WINDOW      = false
 
 	DEBUG_BENCH = false
 	DEBUG_LOG   = true
 
-	DEBUG_STATIC        = true
-	DEBUG_SOURCE_STATIC = "lowsett.png"
+	DEBUG_STATIC        = false
+	DEBUG_SOURCE_STATIC = "cap.png"
 
 	// Utility Globals
 	luvCache     = map[uint32]colorful.Color{}
 	luvCacheList = make([]colorful.Color, 16777216)
 	linearMutex  = &sync.RWMutex{}
-
-	lastPixMat *PixMatrix
 
 	window      *Window
 	imageStatic image.Image
@@ -76,7 +69,7 @@ func hunt() {
 	// Update targeting state
 	if targeting != altPressed {
 		targeting = altPressed
-		// debug("Targeting %v", targeting)
+		debug("Targeting %v", targeting)
 	}
 
 	// Track to the closest char
@@ -135,6 +128,8 @@ func stop() {
 }
 
 func main() {
+	// sandbox()
+
 	loadSwatch()
 
 	if CACHE_LUV {
@@ -150,9 +145,10 @@ func main() {
 	}
 
 	start()
-	// sandbox()
 }
 
 func sandbox() {
-
+	i, _ := CaptureRect(image.Rect(0, 32, 2180, 1380))
+	save(i, "cap.png")
+	os.Exit(0)
 }

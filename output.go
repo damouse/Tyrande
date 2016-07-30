@@ -25,7 +25,7 @@ func moveTo(t Vector) {
 	dx := -t.x
 	dy := -t.y
 
-	// debug("Output: %d %d", dx, dy)
+	debug("Output: %d %d", dx, dy)
 
 	// milliseconds?
 	// duration := 1000

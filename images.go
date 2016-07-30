@@ -155,10 +155,17 @@ func loadSwatch() (result []color.Color) {
 }
 
 var TARGET_SWATCH = []color.Color{
-	color.NRGBA{219, 18, 29, 255},
-	color.NRGBA{140, 31, 59, 255},
-	color.NRGBA{182, 40, 59, 255},
-	color.NRGBA{212, 128, 151, 255},
+	// lowres.png
+	// color.NRGBA{219, 18, 29, 255},
+	// color.NRGBA{140, 31, 59, 255},
+	// color.NRGBA{182, 40, 59, 255},
+	// color.NRGBA{212, 128, 151, 255},
+
+	// cap.png
+	color.NRGBA{233, 80, 60, 255},   //right
+	color.NRGBA{186, 65, 71, 255},   // left
+	color.NRGBA{183, 94, 107, 255},  // top
+	color.NRGBA{215, 140, 151, 255}, // Furthest one. Gets picked up, but fails min checks
 }
 
 func convertSwatches() (ret []*Pix) {

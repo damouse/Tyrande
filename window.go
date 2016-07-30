@@ -14,24 +14,36 @@ import (
 // A set of operations makes up the pipeline
 type Window struct {
 	cvWindow *opencv.Window
+	// recv     chan image.Image
+	working bool
 }
 
 func NewWindow() *Window {
-	return &Window{opencv.NewWindow("Tyrande", 1)}
+	return &Window{
+		opencv.NewWindow("Tyrande", 1),
+		// make(chan image.Image, 0),
+		false,
+	}
+}
+
+func (w *Window) queueShow(op *Cycle) {
+	if !w.working {
+		go w.show(op.mat.toImage())
+	}
 }
 
 func (w *Window) show(i image.Image) {
+	w.working = true
+
 	g := gift.New(
 		gift.Resize(i.Bounds().Max.X/2, i.Bounds().Max.Y/2, gift.LinearResampling),
 	)
 
-	// 2. Create a new image of the corresponding size.
-	// dst is a new target image, src is the original image
 	dst := image.NewNRGBA(g.Bounds(i.Bounds()))
-
 	g.Draw(dst, i)
-
 	w.cvWindow.ShowImage(opencv.FromImage(dst))
+
+	w.working = false
 }
 
 func (w *Window) refresh(i image.Image) {

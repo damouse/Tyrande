@@ -34,8 +34,17 @@ func modeling() {
 	op.bench()
 
 	if DEBUG_SAVE_LINES {
-		op.mat.save("huntress.png")
+		op.save("huntress.png")
 		stop()
+	}
+
+	if DEBUG_WINDOW {
+		// window.show(op.mat.toImage())
+		window.queueShow(&op)
+	}
+
+	if len(op.chars) != len(characters) {
+		debug("Targets: %d", len(op.chars))
 	}
 
 	// Update shared store
