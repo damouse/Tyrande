@@ -9,6 +9,16 @@ import (
 	"github.com/lucasb-eyer/go-colorful"
 )
 
+type Cycle struct {
+	mat   *PixMatrix
+	lines []*Line
+	chars []*Character
+
+	start  time.Time
+	vision time.Time
+	model  time.Time
+}
+
 var (
 	// Settings
 	COLOR_THRESHOLD = 0.15
@@ -19,17 +29,22 @@ var (
 	CONVERTING_GOROUTINES = 8
 	CACHE_LUV             = false
 
-	DEBUG_DRAW_CHUNKS   = false
-	DEBUG_SAVE_LINES    = false
-	DEBUG_STATIC        = true  // if true sources image from DEBUG_SOURCE below instead of screen
-	DEBUG_WINDOW        = false // display a window of the running capture
-	DEBUG_BENCH         = false
-	DEBUG_LOG           = true
+	// Debugging Settings
+	DEBUG_DRAW_CHUNKS = false
+	DEBUG_SAVE_LINES  = true
+	DEBUG_WINDOW      = false
+
+	DEBUG_BENCH = true
+	DEBUG_LOG   = true
+
+	DEBUG_STATIC        = true
 	DEBUG_SOURCE_STATIC = "lowsett.png"
 
 	// Utility Globals
 	luvCache    = map[uint32]colorful.Color{}
 	linearMutex = &sync.RWMutex{}
+
+	lastPixMat *PixMatrix
 
 	window      *Window
 	imageStatic image.Image
@@ -40,7 +55,7 @@ var (
 	target    *Character
 
 	closingChan = make(chan bool, 0)
-	visionChan  = make(chan []*Line, 10)
+	visionChan  = make(chan Cycle, 10)
 	outputChan  = make(chan Vector, 10)
 
 	characters    []*Character
@@ -110,6 +125,13 @@ func stop() {
 	closingChan <- true
 }
 
+func (op *Cycle) bench() {
+	if DEBUG_BENCH {
+		fmt.Printf("Cycle: \t\t%s\n\tVIS: \t%s\n  MOD: \t%s\n",
+			op.model.Sub(op.start), op.vision.Sub(op.start), op.model.Sub(op.vision))
+	}
+}
+
 func main() {
 	loadSwatch()
 
@@ -121,9 +143,8 @@ func main() {
 		imageStatic = open(DEBUG_SOURCE_STATIC)
 	}
 
-	// start()
-
-	sandbox()
+	start()
+	// sandbox()
 }
 
 func sandbox() {

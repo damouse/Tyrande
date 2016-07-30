@@ -8,9 +8,9 @@ import (
 // Main event loop. Continuously captures the screen and places results into visionQ for the main loop to pick up
 func vision() {
 	var p image.Image
-	var start time.Time
 
-	start = time.Now()
+	op := Cycle{}
+	op.start = time.Now()
 
 	if DEBUG_STATIC {
 		p = imageStatic
@@ -18,22 +18,22 @@ func vision() {
 		p = CaptureLeft()
 	}
 
-	mat := convertImage(p)
-	updateCenter(mat)
+	op.mat = convertImage(p)
+	updateCenter(op.mat)
 
-	lines := lineify(mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
+	op.lines = lineify(op.mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
 
-	if DEBUG_SAVE_LINES {
-		go mat.save("huntress.png")
-	}
+	// if DEBUG_SAVE_LINES {
+	// 	mat.save("huntress.png")
+	// 	stop()
+	// }
 
-	if DEBUG_WINDOW {
-		lines = filterLines(lines)
-		window.show(mat.toImage())
-	}
-
-	bench("VIS", start)
-	visionChan <- lines
+	// if DEBUG_WINDOW {
+	// 	lines = filterLines(lines)
+	// 	window.show(mat.toImage())
+	// }
+	op.vision = time.Now()
+	visionChan <- op
 }
 
 func lineify(p *PixMatrix, colors []*Pix, thresh float64, width int) (lines []*Line) {

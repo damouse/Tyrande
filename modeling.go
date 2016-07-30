@@ -18,31 +18,29 @@ var lastUpdate time.Time = time.Now()
 
 // Gets updates from vision and updates characters
 func modeling() {
-	lines := <-visionChan
-	start := time.Now()
+	op := <-visionChan
 
-	lines = filterLines(lines)
+	op.lines = filterLines(op.lines)
 
-	for _, l := range lines {
+	for _, l := range op.lines {
 		l.process()
 	}
 
-	// Update the list of characters
-	var chars []*Character
-
-	for _, l := range lines {
-		chars = append(chars, &Character{l, Vector{}})
+	for _, l := range op.lines {
+		op.chars = append(op.chars, &Character{l, Vector{}})
 	}
 
-	bench("MOD", start)
+	op.model = time.Now()
+	op.bench()
 
-	if len(characters) != len(chars) {
-		// log("MOD %d chars", len(chars))
+	if DEBUG_SAVE_LINES {
+		op.mat.save("huntress.png")
+		stop()
 	}
 
 	// Update shared store
 	characterLock.Lock()
-	characters = chars
+	characters = op.chars
 	characterLock.Unlock()
 
 	log("Update: %s", time.Since(lastUpdate))
