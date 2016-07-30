@@ -1,9 +1,13 @@
 package main
 
 import (
+	"encoding/gob"
+	"fmt"
 	"image"
 	"image/color"
 	"math"
+	"os"
+	"time"
 
 	"github.com/lazywei/go-opencv/opencv"
 	"github.com/lucasb-eyer/go-colorful"
@@ -30,9 +34,9 @@ type Pix struct {
 	filltag int // used by the fill algo
 }
 
-func slide(c color.Color) uint32 {
-	r, g, b, _ := c.RGBA()
-	return (r << 16) | (g << 8) | b
+func index(c color.Color) uint32 {
+	cast := c.(color.NRGBA)
+	return (uint32(cast.R) << 16) | (uint32(cast.G) << 8) | uint32(cast.B)
 }
 
 //
@@ -57,22 +61,7 @@ func (p *Pix) initLuv() {
 		return
 	}
 
-	var l, u, v float64
-
-	if CACHE_LUV {
-		i := slide(p.Color)
-
-		if r, ok := luvCache[i]; ok {
-			l = r.R
-			u = r.G
-			v = r.B
-		} else {
-			l, u, v = convertToColorful(p.Color).Luv()
-			luvCache[i] = colorful.Color{l, u, v}
-		}
-	} else {
-		l, u, v = convertToColorful(p.Color).Luv()
-	}
+	l, u, v := convertToColorful(p.Color).Luv()
 
 	p.r = l
 	p.g = u
@@ -93,29 +82,57 @@ func convertToColorful(c color.Color) colorful.Color {
 }
 
 func colorDistance(a, b *Pix) float64 {
-	a.initLuv()
-	b.initLuv()
+	// a.initLuv()
+	// b.initLuv()
 
-	return math.Sqrt(sq(a.r-b.r) + sq(a.g-b.g) + sq(a.b-b.b))
+	// return math.Sqrt(sq(a.r-b.r) + sq(a.g-b.g) + sq(a.b-b.b))
+
+	if CACHE_LUV {
+		c := luvCacheList[index(a.Color)]
+		d := luvCacheList[index(b.Color)]
+
+		return math.Sqrt(sq(c.R-d.R) + sq(c.G-d.G) + sq(c.B-d.B))
+	} else {
+		a.initLuv()
+		b.initLuv()
+
+		return math.Sqrt(sq(a.r-b.r) + sq(a.g-b.g) + sq(a.b-b.b))
+	}
 }
 
-//
-// Manual LUV Lookup
-// func Luv(l, u, v float64) Color {
-// 	return Xyz(LuvToXyz(l, u, v))
-// }
+func buildLuvCache() {
+	cacher := make([]colorful.Color, 16777216)
 
-// func LuvToXyz(l, u, v float64) (x, y, z float64) {
-// 	// D65 white (see above).
-// 	return LuvToXyzWhiteRef(l, u, v, D65)
-// }
+	for r := 0; r < 256; r++ {
+		for g := 0; g < 256; g++ {
+			for b := 0; b < 256; b++ {
+				key := uint32((r << 16) | (g << 8) | b)
+				cul := colorful.Color{float64(r) / 255.0, float64(g) / 255.0, float64(b) / 255.0}
+				l, u, v := cul.Luv()
+				cacher[key] = colorful.Color{l, u, v}
+			}
+		}
+	}
 
-// func Xyz(x, y, z float64) Color {
-// 	return LinearRgb(XyzToLinearRgb(x, y, z))
-// 	// return FastLinearRgb(XyzToLinearRgb(x, y, z))
-// }
+	dat, err := os.OpenFile("D:\\tyrande.dat", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+	checkError(err)
 
-// func LinearRgb(r, g, b float64) Color {
-// 	// return FastLinearRgb(r, g, b)
-// 	return Color{delinearize(r), delinearize(g), delinearize(b)}
-// }
+	enc := gob.NewEncoder(dat)
+
+	err = enc.Encode(&cacher)
+	checkError(err)
+
+	dat.Close()
+	fmt.Println("Done writing")
+}
+
+func loadLuvCache() {
+	s := time.Now()
+	dat, err := os.Open("D:\\tyrande.dat")
+	dec := gob.NewDecoder(dat)
+
+	err = dec.Decode(&luvCacheList)
+	checkError(err)
+
+	fmt.Printf("LUV Cache loaded in: \t%s\n", time.Since(s))
+}

@@ -16,6 +16,22 @@ func log(s string, args ...interface{}) {
 	fmt.Printf(s+"\n", args...)
 }
 
+// Called at the end of cycle operation. Also save the numbers and average them out for later
+func (op *Cycle) bench() {
+	totalCycles += 1
+
+	total := op.model.Sub(op.start)
+	vis := op.vision.Sub(op.start)
+	mod := op.model.Sub(op.vision)
+
+	sumVisions += vis.Seconds() * 1000
+	sumModles += mod.Seconds() * 1000
+
+	if DEBUG_BENCH {
+		fmt.Printf("Cycle: \t%s\t%s\t%s\n", total, vis, mod)
+	}
+}
+
 // Tasks
 func staticOnce() {
 	p := open("retry.png")
@@ -116,14 +132,16 @@ func startRoutine(fn func()) {
 }
 
 func startRoutineTime(fn func()) {
-	go func() {
-		for {
-			go fn()
-			time.Sleep(time.Millisecond * 100)
+	for i := 0; i < NUM_PARALLEL; i++ {
+		go func() {
+			for {
+				fn()
+				// time.Sleep(time.Millisecond * 100)
 
-			if !running {
-				break
+				if !running {
+					break
+				}
 			}
-		}
-	}()
+		}()
+	}
 }

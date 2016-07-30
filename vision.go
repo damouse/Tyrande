@@ -8,7 +8,6 @@ import (
 // Main event loop. Continuously captures the screen and places results into visionQ for the main loop to pick up
 func vision() {
 	var p image.Image
-
 	op := Cycle{}
 	op.start = time.Now()
 
@@ -19,20 +18,10 @@ func vision() {
 	}
 
 	op.mat = convertImage(p)
-	updateCenter(op.mat)
-
 	op.lines = lineify(op.mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
-
-	// if DEBUG_SAVE_LINES {
-	// 	mat.save("huntress.png")
-	// 	stop()
-	// }
-
-	// if DEBUG_WINDOW {
-	// 	lines = filterLines(lines)
-	// 	window.show(mat.toImage())
-	// }
 	op.vision = time.Now()
+
+	updateCenter(op.mat)
 	visionChan <- op
 }
 
@@ -42,7 +31,6 @@ func lineify(p *PixMatrix, colors []*Pix, thresh float64, width int) (lines []*L
 
 	for y := 0; y < p.h; y += 5 {
 		for x := 0; x < p.w; x += 5 {
-			// Get the pixel from the matrix
 			current := p.get(x, y)
 
 			// This pixel has been filled

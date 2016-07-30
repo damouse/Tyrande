@@ -26,28 +26,32 @@ var (
 	SWATCH          []*Pix
 	POLL_TIME       = 100 * time.Millisecond
 
-	CONVERTING_GOROUTINES = 8
-	CACHE_LUV             = false
+	PARALELIZE   = false // kick off multiple vision goroutines
+	NUM_PARALLEL = 2
+	CACHE_LUV    = true
 
 	// Debugging Settings
 	DEBUG_DRAW_CHUNKS = false
-	DEBUG_SAVE_LINES  = true
+	DEBUG_SAVE_LINES  = false
 	DEBUG_WINDOW      = false
 
-	DEBUG_BENCH = true
+	DEBUG_BENCH = false
 	DEBUG_LOG   = true
 
 	DEBUG_STATIC        = true
 	DEBUG_SOURCE_STATIC = "lowsett.png"
 
 	// Utility Globals
-	luvCache    = map[uint32]colorful.Color{}
-	linearMutex = &sync.RWMutex{}
+	luvCache     = map[uint32]colorful.Color{}
+	luvCacheList = make([]colorful.Color, 16777216)
+	linearMutex  = &sync.RWMutex{}
 
 	lastPixMat *PixMatrix
 
 	window      *Window
 	imageStatic image.Image
+
+	sumVisions, sumModles, totalCycles float64
 
 	// Main Logic globals
 	running   bool
@@ -55,21 +59,17 @@ var (
 	target    *Character
 
 	closingChan = make(chan bool, 0)
-	visionChan  = make(chan Cycle, 10)
+	visionChan  = make(chan Cycle, 100)
 	outputChan  = make(chan Vector, 10)
 
 	characters    []*Character
 	characterLock = &sync.RWMutex{}
 
-	centerVector Vector
-	targetVector Vector
-	outputVector Vector
+	centerVector, targetVector, outputVector Vector
 )
 
 // Main loop
 func hunt() {
-	// start := time.Now()
-
 	// Returns true if left alt is pressed, signifying we should track
 	altPressed := input()
 
@@ -105,9 +105,12 @@ func start() {
 	fmt.Println("TYR Starting")
 	running = true
 
-	// startRoutineTime(vision)
+	if PARALELIZE {
+		startRoutineTime(vision)
+	} else {
+		startRoutine(vision)
+	}
 
-	startRoutine(vision)
 	startRoutine(modeling)
 	// startRoutine(output)
 	startRoutine(hunt)
@@ -117,6 +120,12 @@ func start() {
 	}
 
 	<-closingChan
+
+	mod := sumModles / totalCycles
+	vis := sumVisions / totalCycles
+	avg := (sumVisions + sumModles) / totalCycles
+
+	fmt.Printf("Cycles: \t%1.0f\nAvg Cycle: \t%1.0f ms\nAvg VIS: \t%1.0f ms\nAvg MOD: \t%1.0f ms\n", totalCycles, avg, vis, mod)
 }
 
 func stop() {
@@ -125,15 +134,12 @@ func stop() {
 	closingChan <- true
 }
 
-func (op *Cycle) bench() {
-	if DEBUG_BENCH {
-		fmt.Printf("Cycle: \t\t%s\n\tVIS: \t%s\n  MOD: \t%s\n",
-			op.model.Sub(op.start), op.vision.Sub(op.start), op.model.Sub(op.vision))
-	}
-}
-
 func main() {
 	loadSwatch()
+
+	if CACHE_LUV {
+		loadLuvCache()
+	}
 
 	if DEBUG_WINDOW {
 		window = NewWindow()
