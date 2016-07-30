@@ -14,6 +14,8 @@ type Character struct {
 	offset Vector // vector from this char to the center of the screen
 }
 
+var lastUpdate time.Time = time.Now()
+
 // Gets updates from vision and updates characters
 func modeling() {
 	lines := <-visionChan
@@ -43,6 +45,8 @@ func modeling() {
 	characters = chars
 	characterLock.Unlock()
 
+	log("Update: %s", time.Since(lastUpdate))
+	lastUpdate = time.Now()
 }
 
 // Calculate statistics about this line

@@ -9,36 +9,32 @@ import (
 	"github.com/lucasb-eyer/go-colorful"
 )
 
-// Settings
 var (
+	// Settings
 	COLOR_THRESHOLD = 0.15
 	LINE_WIDTH      = 1
 	SWATCH          []*Pix
 	POLL_TIME       = 100 * time.Millisecond
 
-	CONVERTING_GOROUTINES = 8    // Number of concurrent workers for converting rgb -> LUV
-	CACHE_LUV             = true // Cache luv processing implementation not correct
+	CONVERTING_GOROUTINES = 8
+	CACHE_LUV             = false
 
 	DEBUG_DRAW_CHUNKS   = false
 	DEBUG_SAVE_LINES    = false
-	DEBUG_STATIC        = false // if true sources image from DEBUG_SOURCE below instead of screen
-	DEBUG_WINDOW        = true  // display a window of the running capture
+	DEBUG_STATIC        = true  // if true sources image from DEBUG_SOURCE below instead of screen
+	DEBUG_WINDOW        = false // display a window of the running capture
 	DEBUG_BENCH         = false
 	DEBUG_LOG           = true
 	DEBUG_SOURCE_STATIC = "lowsett.png"
-)
 
-// Utility Globals
-var (
+	// Utility Globals
 	luvCache    = map[uint32]colorful.Color{}
 	linearMutex = &sync.RWMutex{}
 
 	window      *Window
 	imageStatic image.Image
-)
 
-// Main Logic globals
-var (
+	// Main Logic globals
 	running   bool
 	targeting bool
 	target    *Character
@@ -94,7 +90,7 @@ func start() {
 	fmt.Println("TYR Starting")
 	running = true
 
-	startRoutine(vision)
+	startRoutineTime(vision)
 	startRoutine(modeling)
 	// startRoutine(output)
 	startRoutine(hunt)
@@ -123,9 +119,11 @@ func main() {
 		imageStatic = open(DEBUG_SOURCE_STATIC)
 	}
 
-	start()
+	// start()
 
-	// continuouslyWindowed()
-	// screencapOnce()
-	// staticOnce()
+	sandbox()
+}
+
+func sandbox() {
+
 }

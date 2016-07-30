@@ -114,3 +114,16 @@ func startRoutine(fn func()) {
 		}
 	}()
 }
+
+func startRoutineTime(fn func()) {
+	go func() {
+		for {
+			go fn()
+			time.Sleep(time.Millisecond * 100)
+
+			if !running {
+				break
+			}
+		}
+	}()
+}
