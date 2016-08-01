@@ -152,3 +152,12 @@ func sandbox() {
 	save(i, "cap.png")
 	os.Exit(0)
 }
+
+/*
+Could go vision -> input loop -> output loop
+
+Targeting (input + output loop) most likely has to be its own thing.
+
+try without it first?
+
+*/
