@@ -138,7 +138,7 @@ func linearStart() {
 	}
 
 	vis := sumVisions / totalCycles
-	fmt.Printf("Cycles: \t%1.0f\nAvg Cycle: \t%1.0f ms\n", totalCycles, vis)
+	fmt.Printf("Cycles: \t%1.0f\nAvg cycle: \t%1.0f ms\n", totalCycles, vis)
 }
 
 // Like the hunt method, but linearlized
