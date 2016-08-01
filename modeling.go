@@ -3,67 +3,21 @@ package main
 import (
 	"fmt"
 	"sort"
-	"time"
 )
 
 type Char struct {
-	center     Vector
-	offset     Vector // vector from this char to the center of the screen
+	center     Vec
+	offset     Vec // Vec from this char to the center of the screen
 	offsetDist float64
 }
 
-// var lastUpdate time.Time = time.Now()
-
-// Gets updates from vision and updates Chars
-func modeling() {
-	op := <-visionChan
-
-	op.lines = filterLines(op.lines)
-
-	for _, l := range op.lines {
-		l.process()
-	}
-
-	x, y := op.mat.center()
-	op.chars = buildChars(op.lines, Vector{x, y})
-
-	// for _, l := range op.lines {
-	// 	op.chars = append(op.chars, &Char{l, Vector{}})
-	// }
-
-	op.model = time.Now()
-	op.bench()
-
-	if DEBUG_SAVE_LINES {
-		op.save("huntress.png")
-		stop()
-	}
-
-	if DEBUG_WINDOW {
-		// window.show(op.mat.toImage())
-		window.queueShow(&op)
-	}
-
-	if len(op.chars) != len(Chars) {
-		debug("Targets: %d", len(op.chars))
-	}
-
-	// Update shared store
-	CharLock.Lock()
-	Chars = op.chars
-	CharLock.Unlock()
-
-	// log("Update: %s", time.Since(lastUpdate))
-	// lastUpdate = time.Now()
-}
-
 // Build a list of characters from a list of lines, sets Char data, and orders return based on closest
-func buildChars(lines []*Line, center Vector) (ret []*Char) {
+func buildChars(lines []*Line, center Vec) (ret []*Char) {
 	for _, l := range lines {
 		c := &Char{}
 
-		c.center = Vector{l.centerX, l.centerY}
-		c.offset = Vector{center.x - c.center.x, center.y - c.center.y}
+		c.center = Vec{l.avg.x, l.avg.y}
+		c.offset = Vec{center.x - c.center.x, center.y - c.center.y}
 		c.offsetDist = euclideanDistanceVec(center, c.center)
 
 		ret = append(ret, c)
@@ -75,7 +29,7 @@ func buildChars(lines []*Line, center Vector) (ret []*Char) {
 
 // Targeting
 // Return the line whose center is closest to the screen center. If no lines passed, returns nil
-func closestCenter(chars []*Char, center Vector) (ret *Char) {
+func closestCenter(chars []*Char, center Vec) (ret *Char) {
 	return chars[0]
 }
 

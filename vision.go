@@ -1,35 +1,9 @@
 package main
 
-import (
-	"image"
-	"time"
-)
-
 type Line struct {
 	pixels []*Pix
 
-	centerX, centerY       int // center
-	maxX, maxY, minX, minY int
-}
-
-// Main event loop. Continuously captures the screen and places results into visionQ for the main loop to pick up
-func vision() {
-	var p image.Image
-	op := Cycle{}
-	op.start = time.Now()
-
-	if DEBUG_STATIC {
-		p = imageStatic
-	} else {
-		p = CaptureLeft()
-	}
-
-	op.mat = convertImage(p)
-	op.lines = lineify(op.mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
-	op.vision = time.Now()
-
-	updateCenter(&op)
-	visionChan <- op
+	avg, max, min Vec // average, max, and min of all points
 }
 
 func lineify(p *PixMatrix, colors []*Pix, thresh float64, width int) (lines []*Line) {
@@ -77,6 +51,9 @@ func lineify(p *PixMatrix, colors []*Pix, thresh float64, width int) (lines []*L
 
 				// Stop immediately if a chunk is found
 				if len(adj) > 7 {
+					// Shouldn't this be "continue?" Yes, yes it should.
+					// For a reason I cant possibly explain it works with break and not with continue.
+					// I dont remember any other time a bug accidentally made my algo work.
 					break
 				}
 
@@ -115,17 +92,9 @@ func isClose(c *Pix, targets []*Pix, thresh float64) bool {
 }
 
 // Update center of screen coordinates. This method seems bulky and not well designed. Consider removing it
-func updateCenter(op *Cycle) {
-	x, y := op.mat.center()
-
-	x += CENTER_OFFSET.x
-	y += CENTER_OFFSET.y
-
-	centerVector.x = x
-	centerVector.y = y
-
-	op.center.x = x
-	op.center.y = y
+func getCenter(mat *PixMatrix) Vec {
+	x, y := mat.center()
+	return Vec{x + CENTER_OFFSET.x, y + CENTER_OFFSET.y}
 }
 
 // Calculate statistics about this line
@@ -133,28 +102,28 @@ func (l *Line) process() {
 	var sumX, sumY int
 
 	for _, p := range l.pixels {
-		if p.x < l.minX {
-			l.minX = p.x
+		if p.x < l.min.x {
+			l.min.x = p.x
 		}
 
-		if p.y < l.minY {
-			l.minY = p.y
+		if p.y < l.min.y {
+			l.min.y = p.y
 		}
 
-		if p.x > l.maxX {
-			l.maxX = p.x
+		if p.x > l.max.x {
+			l.max.x = p.x
 		}
 
-		if p.y > l.maxY {
-			l.maxY = p.y
+		if p.y > l.max.y {
+			l.max.y = p.y
 		}
 
 		sumX += p.x
 		sumY += p.y
 	}
 
-	l.centerX = sumX / len(l.pixels)
-	l.centerY = sumY / len(l.pixels)
+	l.avg.x = sumX / len(l.pixels)
+	l.avg.y = sumY / len(l.pixels)
 }
 
 // Filter lines that dont look like actual lines

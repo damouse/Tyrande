@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"image"
 	"image/color"
 	"math"
 	"time"
@@ -14,7 +15,7 @@ type Cycle struct {
 
 	start, vision, model time.Time
 
-	center Vector
+	center Vec
 }
 
 // Called at the end of cycle operation. Also save the numbers and average them out for later
@@ -28,7 +29,7 @@ func (op *Cycle) bench() {
 	sumVisions += vis.Seconds() * 1000
 	sumModles += mod.Seconds() * 1000
 
-	if DEBUG_BENCH {
+	if LOG_BENCH {
 		fmt.Printf("Cycle: \t%s\t%s\t%s\n", total, vis, mod)
 	}
 }
@@ -49,8 +50,31 @@ func (op Cycle) save(name string) {
 	save(i, name)
 }
 
+func draw(mat *PixMatrix, lines []*Line, chars []*Char) *image.NRGBA {
+	img := mat.toImage()
+
+	colorPixFromVec(mat, img, getCenter(mat))
+
+	for _, char := range chars {
+		colorPixFromVec(mat, img, char.center)
+	}
+
+	return img
+}
+
+func colorPixFromVec(mat *PixMatrix, img *image.NRGBA, vec Vec) {
+	m := &Pix{}
+	m.x = vec.x
+	m.y = vec.y
+
+	// Draw the center of the image
+	for _, p := range mat.adjacent(m, 1) {
+		img.Set(p.x, p.y, color.NRGBA{0, 255, 255, 255})
+	}
+}
+
 func debug(s string, args ...interface{}) {
-	if DEBUG_LOG {
+	if LOG {
 		fmt.Printf(s+"\n", args...)
 	}
 }
@@ -60,48 +84,6 @@ func log(s string, args ...interface{}) {
 }
 
 // Tasks
-func staticOnce() {
-	p := open("retry.png")
-
-	start := time.Now()
-
-	mat := convertImage(p)
-
-	lineify(mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
-	mat.save("huntress.png")
-
-	fmt.Printf("Hunt completed in: %s\n", time.Since(start))
-}
-
-func screencapOnce() {
-	p := CaptureLeft()
-	mat := convertImage(p)
-
-	lineify(mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
-
-	mat.save("huntress.png")
-}
-
-func continuouslyWindowed() {
-	w := NewWindow()
-
-	go func(win *Window) {
-		for {
-			start := time.Now()
-
-			p := CaptureLeft()
-			mat := convertImage(p)
-
-			lineify(mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
-
-			fmt.Printf("Hunt completed in: %s\n", time.Since(start))
-			w.show(mat.toImage())
-		}
-	}(w)
-
-	w.wait()
-}
-
 func checkError(err error) {
 	if err != nil {
 		panic(err)
@@ -116,7 +98,7 @@ func euclideanDistance(x1, y1, x2, y2 int) float64 {
 	return math.Sqrt(dx*dx + dy*dy)
 }
 
-func euclideanDistanceVec(a, b Vector) float64 {
+func euclideanDistanceVec(a, b Vec) float64 {
 	return euclideanDistance(a.x, a.y, b.x, b.y)
 }
 
@@ -125,7 +107,7 @@ func sq(v float64) float64 {
 }
 
 func bench(name string, start time.Time) {
-	if DEBUG_BENCH {
+	if LOG_BENCH {
 		fmt.Printf("%s \t%s\n", name, time.Since(start))
 	}
 }
@@ -142,17 +124,66 @@ func startRoutine(fn func()) {
 	}()
 }
 
-func startRoutineTime(fn func()) {
-	for i := 0; i < NUM_PARALLEL; i++ {
-		go func() {
-			for {
-				fn()
-				// time.Sleep(time.Millisecond * 100)
+//
+// Old start and hunt methods
+/*
+// Main loop
+func oldhunt() {
+	// Returns true if left alt is pressed, signifying we should track
+	altPressed := false //input()
 
-				if !running {
-					break
-				}
-			}
-		}()
+	// Update targeting state
+	if targeting != altPressed {
+		targeting = altPressed
+		// debug("Targeting %v", targeting)
 	}
+
+	// Track to the closest char
+	if targeting {
+		CharLock.RLock()
+		target = closestCenter(Chars, centerVec)
+		CharLock.RUnlock()
+
+		// This is "tracking"
+		if target != nil {
+			outputVec = target.offset
+			moveTo(outputVec)
+		}
+	}
+
+	// bench("TYR", start)
+
+	if !running {
+		return
+	}
+
+	time.Sleep(POLL_TIME)
 }
+
+func oldstart() {
+	fmt.Println("TYR Starting")
+	running = true
+
+	if PARALELIZE {
+		startRoutineTime(vision)
+	} else {
+		startRoutine(vision)
+	}
+
+	startRoutine(modeling)
+	// startRoutine(output)
+	startRoutine(oldhunt)
+
+	if DEBUG_WINDOW {
+		window.wait()
+	}
+
+	<-closingChan
+
+	mod := sumModles / totalCycles
+	vis := sumVisions / totalCycles
+	avg := (sumVisions + sumModles) / totalCycles
+
+	fmt.Printf("Cycles: \t%1.0f\nAvg Cycle: \t%1.0f ms\nAvg VIS: \t%1.0f ms\nAvg MOD: \t%1.0f ms\n", totalCycles, avg, vis, mod)
+}
+*/

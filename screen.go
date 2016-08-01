@@ -9,6 +9,20 @@ import (
 	"github.com/lxn/win"
 )
 
+func capture() *PixMatrix {
+	var p image.Image
+
+	if DEBUG_STATIC {
+		p = imageStatic
+	} else if targeting {
+		p = CaptureLeftNarrow(0.3, 0.3)
+	} else {
+		p = CaptureLeft()
+	}
+
+	return convertImage(p)
+}
+
 func ScreenRect() (image.Rectangle, error) {
 	hDC := win.GetDC(0)
 	if hDC == 0 {

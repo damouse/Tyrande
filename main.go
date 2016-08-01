@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"image"
 	"os"
-	"sync"
+	"runtime/pprof"
 	"time"
 
 	"github.com/lucasb-eyer/go-colorful"
@@ -15,152 +15,56 @@ var (
 	COLOR_THRESHOLD = 0.3
 	LINE_WIDTH      = 1
 	SWATCH          []*Pix
-	POLL_TIME       = 100 * time.Millisecond
 
-	PARALELIZE   = false // kick off multiple vision goroutines
-	NUM_PARALLEL = 2
-	CACHE_LUV    = true
+	POLL_TIME = 100 * time.Millisecond
+	CACHE_LUV = false
+
+	LOG_BENCH = true
+	LOG       = true
 
 	LEFT_SCREEN_DIM = image.Rect(0, 32, 2180, 1380)
-	CENTER_OFFSET   = Vector{5, 9} // Where the retircle is wrt the screencap /2
+	CENTER_OFFSET   = Vec{5, 9} // Where the retircle is wrt the screencap /2
 
 	// Debugging Settings
 	DEBUG_DRAW_CHUNKS = false
-	DEBUG_SAVE_LINES  = false
+	DEBUG_SAVE_LINES  = true
 	DEBUG_DARKEN      = true
 
 	DEBUG_WINDOW   = false
 	DEBUG_RUN_ONCE = false
 
-	DEBUG_BENCH = true
-	DEBUG_LOG   = true
-
-	DEBUG_STATIC        = false
+	DEBUG_STATIC        = true
 	DEBUG_SOURCE_STATIC = "cap.png"
-
-	// Utility Globals
-	luvCache     = map[uint32]colorful.Color{}
-	luvCacheList = make([]colorful.Color, 16777216)
-	linearMutex  = &sync.RWMutex{}
 
 	window      *Window
 	imageStatic image.Image
 
+	// Utility Globals
+	luvCacheList = make([]colorful.Color, 16777216)
+
 	sumVisions, sumModles, totalCycles float64
 
 	// Main Logic globals
-	running   bool
-	targeting bool
-	target    *Char
+	running, targeting              bool
+	centerVec, targetVec, outputVec Vec
 
 	closingChan = make(chan bool, 0)
-	visionChan  = make(chan Cycle, 100)
-	outputChan  = make(chan Vector, 10)
+	outputChan  = make(chan Vec, 10)
 
-	Chars    []*Char
-	CharLock = &sync.RWMutex{}
-
-	centerVector, targetVector, outputVector Vector
+	Chars []*Char
 )
 
-// Main loop
-func hunt() {
-	// Returns true if left alt is pressed, signifying we should track
-	altPressed := false //input()
-
-	// Update targeting state
-	if targeting != altPressed {
-		targeting = altPressed
-		// debug("Targeting %v", targeting)
-	}
-
-	// Track to the closest char
-	if targeting {
-		CharLock.RLock()
-		target = closestCenter(Chars, centerVector)
-		CharLock.RUnlock()
-
-		// This is "tracking"
-		if target != nil {
-			outputVector = target.offset
-			moveTo(outputVector)
-		}
-	}
-
-	// bench("TYR", start)
-
-	if !running {
-		return
-	}
-
-	time.Sleep(POLL_TIME)
-}
-
-func start() {
-	fmt.Println("TYR Starting")
-	running = true
-
-	if PARALELIZE {
-		startRoutineTime(vision)
-	} else {
-		startRoutine(vision)
-	}
-
-	startRoutine(modeling)
-	// startRoutine(output)
-	startRoutine(hunt)
-
-	if DEBUG_WINDOW {
-		window.wait()
-	}
-
-	<-closingChan
-
-	mod := sumModles / totalCycles
-	vis := sumVisions / totalCycles
-	avg := (sumVisions + sumModles) / totalCycles
-
-	fmt.Printf("Cycles: \t%1.0f\nAvg Cycle: \t%1.0f ms\nAvg VIS: \t%1.0f ms\nAvg MOD: \t%1.0f ms\n", totalCycles, avg, vis, mod)
-}
-
-func linearStart() {
-	running = true
-
-	go startRoutine(input)
-
-	for {
-		linearHunt()
-
-		if !running || DEBUG_RUN_ONCE {
-			fmt.Println("Linear stopping")
-			break
-		}
-	}
-
-	vis := sumVisions / totalCycles
-	fmt.Printf("Cycles: \t%1.0f\nAvg cycle: \t%1.0f ms\n", totalCycles, vis)
-}
-
-// Like the hunt method, but linearlized
-func linearHunt() {
+func hunt() *image.NRGBA {
 	start := time.Now()
 
 	// Capture
-	var mat *PixMatrix
-
-	if DEBUG_STATIC {
-		mat = convertImage(imageStatic)
-	} else if targeting {
-		mat = convertImage(CaptureLeftNarrow(0.3, 0.3))
-	} else {
-		mat = convertImage(CaptureLeft())
-	}
+	mat := capture()
 
 	// Vision
 	lines := lineify(mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
 
 	cx, cy := mat.center()
-	center := Vector{cx, cy}
+	center := Vec{cx, cy}
 
 	// Modeling
 	lines = filterLines(lines)
@@ -172,41 +76,52 @@ func linearHunt() {
 	chars := buildChars(lines, center)
 	Chars = chars
 
-	if DEBUG_WINDOW {
-		go window.show(mat.toImage())
-	}
-
-	// Input
-	// altPressed := input()
-	// altPressed = true
-
-	// Update targeting state
-	// if targeting != altPressed {
-	// 	targeting = altPressed
-	// 	// debug("Targeting %v", targeting)
-	// }
-
 	// Track to the closest char
 	if targeting && len(chars) != 0 {
-		target = chars[0]
+		target := chars[0]
 
-		// This is "tracking"
-		if target != nil {
-			outputVector = target.offset
-			moveNow(outputVector)
-		}
+		outputVec = target.offset
+		moveNow(outputVec)
 	}
 
 	// fmt.Printf("Cycle: %s\n", time.Since(start))
 
 	sumVisions += time.Since(start).Seconds() * 1000
 	totalCycles += 1
+
+	if DEBUG_SAVE_LINES || DEBUG_WINDOW {
+		return draw(mat, lines, chars)
+	} else {
+		return nil
+	}
 }
 
-func stop() {
-	fmt.Println("TYR Stopped")
-	running = false
-	closingChan <- true
+func start() {
+	fmt.Println("TYR Starting")
+	running = true
+
+	go startRoutine(input)
+
+	for {
+		i := hunt()
+
+		if DEBUG_WINDOW {
+			go window.show(i)
+		}
+
+		if DEBUG_SAVE_LINES {
+			save(i, "huntress.png")
+		}
+
+		if !running || DEBUG_RUN_ONCE || DEBUG_SAVE_LINES {
+			fmt.Println("Linear stopping")
+			break
+		}
+	}
+
+	// Do a little bit of benching
+	vis := sumVisions / totalCycles
+	fmt.Printf("Cycles: \t%1.0f\nAvg cycle: \t%1.0f ms\n", totalCycles, vis)
 }
 
 func init() {
@@ -225,27 +140,35 @@ func init() {
 	}
 }
 
+func stop() {
+	fmt.Println("TYR Stopped")
+	running = false
+	closingChan <- true
+}
+
+func profile() {
+	f, err := os.Create("cpu.out")
+	checkError(err)
+
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
+
+	start()
+}
+
 func main() {
+	// profile()
 	// sandbox()
 
-	// start()
-
 	if DEBUG_WINDOW {
-		go linearStart()
+		go start()
 		window.wait()
 	} else {
-		linearStart()
+		start()
 	}
 }
 
 func sandbox() {
-	for i := 0; i < 10; i++ {
-		fmt.Printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
-		fmt.Println("hi")
-		fmt.Println(i)
-		// fmt.Printf("\r\rOn %d/10\non\non", i)
-		time.Sleep(100 * time.Millisecond)
-	}
 
 	os.Exit(0)
 }

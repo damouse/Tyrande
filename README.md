@@ -31,6 +31,11 @@ go tool pprof tyrande.test.exe cpu.out
 web
 ```
 
+```
+go tool pprof tyrande.exe cpu.out
+web
+```
+
 See top 20 functions: 
 
 ```

@@ -16,12 +16,12 @@ func output() {
 
 }
 
-type Vector struct {
+type Vec struct {
 	x, y int
 }
 
 // Moves to the given coordinates
-func moveTo(t Vector) {
+func moveTo(t Vec) {
 	dx := -t.x
 	dy := -t.y
 
@@ -38,7 +38,7 @@ func moveTo(t Vector) {
 	}
 }
 
-func moveNow(t Vector) {
+func moveNow(t Vec) {
 	moveRelative(-t.x, -t.y)
 }
 
