@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+type Line struct {
+	pixels []*Pix
+
+	centerX, centerY       int // center
+	maxX, maxY, minX, minY int
+}
+
 // Main event loop. Continuously captures the screen and places results into visionQ for the main loop to pick up
 func vision() {
 	var p image.Image
@@ -107,7 +114,7 @@ func isClose(c *Pix, targets []*Pix, thresh float64) bool {
 	return false
 }
 
-// Update center of screen coordinates
+// Update center of screen coordinates. This method seems bulky and not well designed. Consider removing it
 func updateCenter(op *Cycle) {
 	x, y := op.mat.center()
 
@@ -120,6 +127,72 @@ func updateCenter(op *Cycle) {
 	op.center.x = x
 	op.center.y = y
 }
+
+// Calculate statistics about this line
+func (l *Line) process() {
+	var sumX, sumY int
+
+	for _, p := range l.pixels {
+		if p.x < l.minX {
+			l.minX = p.x
+		}
+
+		if p.y < l.minY {
+			l.minY = p.y
+		}
+
+		if p.x > l.maxX {
+			l.maxX = p.x
+		}
+
+		if p.y > l.maxY {
+			l.maxY = p.y
+		}
+
+		sumX += p.x
+		sumY += p.y
+	}
+
+	l.centerX = sumX / len(l.pixels)
+	l.centerY = sumY / len(l.pixels)
+}
+
+// Filter lines that dont look like actual lines
+// Note: density may also be a good measure of "lineiness"
+func filterLines(lines []*Line) (ret []*Line) {
+	for _, l := range lines {
+		if len(l.pixels) < 150 {
+			for _, p := range l.pixels {
+				p.ptype = PIX_CHUNK
+			}
+
+			continue
+		}
+
+		ret = append(ret, l)
+	}
+
+	return
+}
+
+// Lines
+func (l *Line) add(p *Pix) {
+	l.pixels = append(l.pixels, p)
+}
+
+func (l *Line) addAll(p []*Pix) {
+	for _, a := range p {
+		l.add(a)
+	}
+}
+
+func (l *Line) merge(o *Line) {
+	for _, p := range o.pixels {
+		l.add(p)
+	}
+}
+
+//
 
 // We can use this to bound the search distance for the sake of performance
 // halfX := img.Bounds().Max.X / 3

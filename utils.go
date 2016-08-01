@@ -10,7 +10,7 @@ import (
 type Cycle struct {
 	mat   *PixMatrix
 	lines []*Line
-	chars []*Character
+	chars []*Char
 
 	start, vision, model time.Time
 
@@ -114,6 +114,10 @@ func euclideanDistance(x1, y1, x2, y2 int) float64 {
 	dy := float64(y1) - float64(y2)
 
 	return math.Sqrt(dx*dx + dy*dy)
+}
+
+func euclideanDistanceVec(a, b Vector) float64 {
+	return euclideanDistance(a.x, a.y, b.x, b.y)
 }
 
 func sq(v float64) float64 {

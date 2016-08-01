@@ -12,14 +12,14 @@ import (
 
 var (
 	// Settings
-	COLOR_THRESHOLD = 0.2
+	COLOR_THRESHOLD = 0.3
 	LINE_WIDTH      = 1
 	SWATCH          []*Pix
 	POLL_TIME       = 100 * time.Millisecond
 
 	PARALELIZE   = false // kick off multiple vision goroutines
 	NUM_PARALLEL = 2
-	CACHE_LUV    = true
+	CACHE_LUV    = false
 
 	LEFT_SCREEN_DIM = image.Rect(0, 32, 2180, 1380)
 	CENTER_OFFSET   = Vector{5, 9} // Where the retircle is wrt the screencap /2
@@ -28,7 +28,9 @@ var (
 	DEBUG_DRAW_CHUNKS = false
 	DEBUG_SAVE_LINES  = false
 	DEBUG_DARKEN      = true
-	DEBUG_WINDOW      = false
+
+	DEBUG_WINDOW   = true
+	DEBUG_RUN_ONCE = false
 
 	DEBUG_BENCH = false
 	DEBUG_LOG   = true
@@ -49,14 +51,14 @@ var (
 	// Main Logic globals
 	running   bool
 	targeting bool
-	target    *Character
+	target    *Char
 
 	closingChan = make(chan bool, 0)
 	visionChan  = make(chan Cycle, 100)
 	outputChan  = make(chan Vector, 10)
 
-	characters    []*Character
-	characterLock = &sync.RWMutex{}
+	Chars    []*Char
+	CharLock = &sync.RWMutex{}
 
 	centerVector, targetVector, outputVector Vector
 )
@@ -74,9 +76,9 @@ func hunt() {
 
 	// Track to the closest char
 	if targeting {
-		characterLock.RLock()
-		target = closestCenter(characters, centerVector)
-		characterLock.RUnlock()
+		CharLock.RLock()
+		target = closestCenter(Chars, centerVector)
+		CharLock.RUnlock()
 
 		// This is "tracking"
 		if target != nil {
@@ -121,6 +123,79 @@ func start() {
 	fmt.Printf("Cycles: \t%1.0f\nAvg Cycle: \t%1.0f ms\nAvg VIS: \t%1.0f ms\nAvg MOD: \t%1.0f ms\n", totalCycles, avg, vis, mod)
 }
 
+func linearStart() {
+	running = true
+
+	for {
+		linearHunt()
+
+		if !running || DEBUG_RUN_ONCE {
+			return
+		}
+	}
+}
+
+// Like the hunt method, but linearlized
+func linearHunt() {
+	// start := time.Now()
+
+	// Capture
+	var mat *PixMatrix
+
+	if DEBUG_STATIC {
+		mat = convertImage(imageStatic)
+	} else {
+		mat = convertImage(CaptureLeft())
+	}
+
+	// Vision
+	lines := lineify(mat, SWATCH, COLOR_THRESHOLD, LINE_WIDTH)
+
+	cx, cy := mat.center()
+	center := Vector{cx, cy}
+
+	// Modeling
+	lines = filterLines(lines)
+
+	for _, l := range lines {
+		l.process()
+	}
+
+	chars := buildChars(lines, center)
+
+	if len(chars) != len(Chars) {
+		debug("Targets: %d", len(chars))
+		printChars(chars)
+	}
+
+	Chars = chars
+
+	go window.show(mat.toImage())
+
+	// Input
+	altPressed := input()
+	// altPressed = true
+
+	// Update targeting state
+	if targeting != altPressed {
+		targeting = altPressed
+		debug("Targeting %v", targeting)
+	}
+
+	// Track to the closest char
+	if targeting {
+		target = chars[0]
+
+		// This is "tracking"
+		if target != nil {
+			outputVector = target.offset
+			moveNow(outputVector)
+		}
+	}
+
+	// fmt.Printf("Cycle: %s\n", time.Since(start))
+}
+
 func stop() {
 	fmt.Println("TYR Stopped")
 	running = false
@@ -144,20 +219,38 @@ func main() {
 		imageStatic = open(DEBUG_SOURCE_STATIC)
 	}
 
-	start()
+	// start()
+	go linearStart()
+	window.wait()
 }
 
 func sandbox() {
-	i, _ := CaptureRect(image.Rect(0, 32, 2180, 1380))
-	save(i, "cap.png")
+	for i := 0; i < 10; i++ {
+		fmt.Printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
+		fmt.Println("hi")
+		fmt.Println(i)
+		// fmt.Printf("\r\rOn %d/10\non\non", i)
+		time.Sleep(100 * time.Millisecond)
+	}
+
 	os.Exit(0)
 }
 
 /*
-Could go vision -> input loop -> output loop
+TOOD:
+	- Vision accuracy improvement
+	- Vision performance
+	- Merge lines
+	- Narrowing: smaller capture arear when Targeting
+		- Will this fail on closer targets?
+	- Seperate parallelization and implementation methods
 
-Targeting (input + output loop) most likely has to be its own thing.
+Questions
+	What effect does mouse sensetivity have on output? Check different sensetivities
 
-try without it first?
+	Does move-delta make sense at different ranges?
+		Dont do move-delta right now. It is harder to implement and cannot account for vertical movement well.
+		In other words: can take player mouse movement into account, but not jumping or falling
 
+	Is there a simple multiplier we can use to calculate output? Does this relate to sensetivity testing?
 */

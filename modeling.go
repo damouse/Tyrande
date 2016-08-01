@@ -1,22 +1,20 @@
 package main
 
-import "time"
+import (
+	"fmt"
+	"sort"
+	"time"
+)
 
-type Line struct {
-	pixels []*Pix
-
-	centerX, centerY       int // center
-	maxX, maxY, minX, minY int
-}
-
-type Character struct {
-	*Line
-	offset Vector // vector from this char to the center of the screen
+type Char struct {
+	center     Vector
+	offset     Vector // vector from this char to the center of the screen
+	offsetDist float64
 }
 
 // var lastUpdate time.Time = time.Now()
 
-// Gets updates from vision and updates characters
+// Gets updates from vision and updates Chars
 func modeling() {
 	op := <-visionChan
 
@@ -26,9 +24,12 @@ func modeling() {
 		l.process()
 	}
 
-	for _, l := range op.lines {
-		op.chars = append(op.chars, &Character{l, Vector{}})
-	}
+	x, y := op.mat.center()
+	op.chars = buildChars(op.lines, Vector{x, y})
+
+	// for _, l := range op.lines {
+	// 	op.chars = append(op.chars, &Char{l, Vector{}})
+	// }
 
 	op.model = time.Now()
 	op.bench()
@@ -43,101 +44,52 @@ func modeling() {
 		window.queueShow(&op)
 	}
 
-	if len(op.chars) != len(characters) {
+	if len(op.chars) != len(Chars) {
 		debug("Targets: %d", len(op.chars))
 	}
 
 	// Update shared store
-	characterLock.Lock()
-	characters = op.chars
-	characterLock.Unlock()
+	CharLock.Lock()
+	Chars = op.chars
+	CharLock.Unlock()
 
 	// log("Update: %s", time.Since(lastUpdate))
 	// lastUpdate = time.Now()
 }
 
-// Calculate statistics about this line
-func (l *Line) process() {
-	var sumX, sumY int
-
-	for _, p := range l.pixels {
-		if p.x < l.minX {
-			l.minX = p.x
-		}
-
-		if p.y < l.minY {
-			l.minY = p.y
-		}
-
-		if p.x > l.maxX {
-			l.maxX = p.x
-		}
-
-		if p.y > l.maxY {
-			l.maxY = p.y
-		}
-
-		sumX += p.x
-		sumY += p.y
-	}
-
-	l.centerX = sumX / len(l.pixels)
-	l.centerY = sumY / len(l.pixels)
-}
-
-// Filter lines that dont look like actual lines
-// Note: density may also be a good measure of "lineiness"
-func filterLines(lines []*Line) (ret []*Line) {
+// Build a list of characters from a list of lines, sets Char data, and orders return based on closest
+func buildChars(lines []*Line, center Vector) (ret []*Char) {
 	for _, l := range lines {
-		if len(l.pixels) < 150 {
-			for _, p := range l.pixels {
-				p.ptype = PIX_CHUNK
-			}
+		c := &Char{}
 
-			continue
-		}
+		c.center = Vector{l.centerX, l.centerY}
+		c.offset = Vector{center.x - c.center.x, center.y - c.center.y}
+		c.offsetDist = euclideanDistanceVec(center, c.center)
 
-		ret = append(ret, l)
+		ret = append(ret, c)
 	}
 
+	sort.Sort(ByDistance(ret))
 	return
 }
 
-//
 // Targeting
 // Return the line whose center is closest to the screen center. If no lines passed, returns nil
-func closestCenter(chars []*Character, center Vector) (ret *Character) {
-	closest := 10000.0
-
-	for _, char := range chars {
-		l := char.Line
-		// fmt.Println(center, ret)
-
-		char.offset = Vector{center.x - char.centerX, center.y - char.centerY}
-		dist := euclideanDistance(l.centerX, l.centerY, center.x, center.y)
-
-		if dist < closest {
-			closest = dist
-			ret = char
-		}
-	}
-
-	return
+func closestCenter(chars []*Char, center Vector) (ret *Char) {
+	return chars[0]
 }
 
-// Lines
-func (l *Line) add(p *Pix) {
-	l.pixels = append(l.pixels, p)
-}
+// func (c *Char) centerOffset()
 
-func (l *Line) addAll(p []*Pix) {
-	for _, a := range p {
-		l.add(a)
+func printChars(chars []*Char) {
+	for _, c := range chars {
+		fmt.Printf("\tcenter: %d, %d\n", c.offset.x, c.offset.y)
 	}
 }
 
-func (l *Line) merge(o *Line) {
-	for _, p := range o.pixels {
-		l.add(p)
-	}
-}
+// Allows sorting of characters by distance
+type ByDistance []*Char
+
+func (a ByDistance) Len() int           { return len(a) }
+func (a ByDistance) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByDistance) Less(i, j int) bool { return a[i].offsetDist < a[j].offsetDist }

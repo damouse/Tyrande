@@ -25,8 +25,6 @@ func moveTo(t Vector) {
 	dx := -t.x
 	dy := -t.y
 
-	debug("Output: %d %d", dx, dy)
-
 	// milliseconds?
 	// duration := 1000
 	cycles := 30
@@ -40,14 +38,17 @@ func moveTo(t Vector) {
 	}
 }
 
+func moveNow(t Vector) {
+	moveRelative(-t.x, -t.y)
+}
+
 // Move the cursor a certain distance
 func moveRelative(x, y int) {
 	// The integer values for dx and dy are deltas if MOUSEEVENTF_ABSOLUTE is not set,
 	// else its where the mouse ends up
+	debug("Output: %d %d", x, y)
 
-	var inputs []w32.INPUT
-
-	inputs = append(inputs, w32.INPUT{
+	inputs := []w32.INPUT{w32.INPUT{
 		Type: w32.INPUT_MOUSE,
 		Mi: w32.MOUSEINPUT{
 			Dx:          int32(x),
@@ -57,7 +58,7 @@ func moveRelative(x, y int) {
 			Time:        0,
 			DwExtraInfo: 0,
 		},
-	})
+	}}
 
 	w32.SendInput(inputs)
 }
@@ -89,7 +90,7 @@ Vision
 	Outline input loop. Reads the screen, calls Tyrande with Lines
 
 Model
-	Tracks characters in an abstract way
+	Tracks Chars in an abstract way
 
 Input
 	Handles input-over-time to system
