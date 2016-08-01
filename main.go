@@ -19,7 +19,7 @@ var (
 
 	PARALELIZE   = false // kick off multiple vision goroutines
 	NUM_PARALLEL = 2
-	CACHE_LUV    = false
+	CACHE_LUV    = true
 
 	LEFT_SCREEN_DIM = image.Rect(0, 32, 2180, 1380)
 	CENTER_OFFSET   = Vector{5, 9} // Where the retircle is wrt the screencap /2
@@ -29,10 +29,10 @@ var (
 	DEBUG_SAVE_LINES  = false
 	DEBUG_DARKEN      = true
 
-	DEBUG_WINDOW   = true
+	DEBUG_WINDOW   = false
 	DEBUG_RUN_ONCE = false
 
-	DEBUG_BENCH = false
+	DEBUG_BENCH = true
 	DEBUG_LOG   = true
 
 	DEBUG_STATIC        = false
@@ -66,12 +66,12 @@ var (
 // Main loop
 func hunt() {
 	// Returns true if left alt is pressed, signifying we should track
-	altPressed := input()
+	altPressed := false //input()
 
 	// Update targeting state
 	if targeting != altPressed {
 		targeting = altPressed
-		debug("Targeting %v", targeting)
+		// debug("Targeting %v", targeting)
 	}
 
 	// Track to the closest char
@@ -126,24 +126,32 @@ func start() {
 func linearStart() {
 	running = true
 
+	go startRoutine(input)
+
 	for {
 		linearHunt()
 
 		if !running || DEBUG_RUN_ONCE {
-			return
+			fmt.Println("Linear stopping")
+			break
 		}
 	}
+
+	vis := sumVisions / totalCycles
+	fmt.Printf("Cycles: \t%1.0f\nAvg Cycle: \t%1.0f ms\n", totalCycles, vis)
 }
 
 // Like the hunt method, but linearlized
 func linearHunt() {
-	// start := time.Now()
+	start := time.Now()
 
 	// Capture
 	var mat *PixMatrix
 
 	if DEBUG_STATIC {
 		mat = convertImage(imageStatic)
+	} else if targeting {
+		mat = convertImage(CaptureLeftNarrow(0.3, 0.3))
 	} else {
 		mat = convertImage(CaptureLeft())
 	}
@@ -162,28 +170,24 @@ func linearHunt() {
 	}
 
 	chars := buildChars(lines, center)
-
-	if len(chars) != len(Chars) {
-		debug("Targets: %d", len(chars))
-		printChars(chars)
-	}
-
 	Chars = chars
 
-	go window.show(mat.toImage())
+	if DEBUG_WINDOW {
+		go window.show(mat.toImage())
+	}
 
 	// Input
-	altPressed := input()
+	// altPressed := input()
 	// altPressed = true
 
 	// Update targeting state
-	if targeting != altPressed {
-		targeting = altPressed
-		debug("Targeting %v", targeting)
-	}
+	// if targeting != altPressed {
+	// 	targeting = altPressed
+	// 	// debug("Targeting %v", targeting)
+	// }
 
 	// Track to the closest char
-	if targeting {
+	if targeting && len(chars) != 0 {
 		target = chars[0]
 
 		// This is "tracking"
@@ -194,6 +198,9 @@ func linearHunt() {
 	}
 
 	// fmt.Printf("Cycle: %s\n", time.Since(start))
+
+	sumVisions += time.Since(start).Seconds() * 1000
+	totalCycles += 1
 }
 
 func stop() {
@@ -202,9 +209,7 @@ func stop() {
 	closingChan <- true
 }
 
-func main() {
-	// sandbox()
-
+func init() {
 	loadSwatch()
 
 	if CACHE_LUV {
@@ -218,10 +223,19 @@ func main() {
 	if DEBUG_STATIC {
 		imageStatic = open(DEBUG_SOURCE_STATIC)
 	}
+}
+
+func main() {
+	// sandbox()
 
 	// start()
-	go linearStart()
-	window.wait()
+
+	if DEBUG_WINDOW {
+		go linearStart()
+		window.wait()
+	} else {
+		linearStart()
+	}
 }
 
 func sandbox() {

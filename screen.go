@@ -36,6 +36,27 @@ func CaptureLeft() image.Image {
 	return i
 }
 
+// Same as above, but captures only a fraction of the screen
+func CaptureLeftNarrow(fracX, fracY float64) image.Image {
+	dx := LEFT_SCREEN_DIM.Max.X - LEFT_SCREEN_DIM.Min.X
+	dy := LEFT_SCREEN_DIM.Max.Y - LEFT_SCREEN_DIM.Min.Y
+
+	offx := int(float64(dx) * fracX * 0.5)
+	offy := int(float64(dy) * fracY * 0.5)
+
+	newRect := image.Rect(
+		LEFT_SCREEN_DIM.Min.X+offx,
+		LEFT_SCREEN_DIM.Min.Y+offy,
+		LEFT_SCREEN_DIM.Max.X-offx,
+		LEFT_SCREEN_DIM.Max.Y-offy,
+	)
+
+	// fmt.Println("Rect: ", newRect)
+
+	i, _ := CaptureRect(newRect)
+	return i
+}
+
 func CaptureRect(rect image.Rectangle) (image.Image, error) {
 	hDC := win.GetDC(0)
 	if hDC == 0 {

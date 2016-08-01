@@ -46,7 +46,7 @@ func moveNow(t Vector) {
 func moveRelative(x, y int) {
 	// The integer values for dx and dy are deltas if MOUSEEVENTF_ABSOLUTE is not set,
 	// else its where the mouse ends up
-	debug("Output: %d %d", x, y)
+	// debug("Output: %d %d", x, y)
 
 	inputs := []w32.INPUT{w32.INPUT{
 		Type: w32.INPUT_MOUSE,
