@@ -28,6 +28,11 @@ func (m *PixMatrix) set(v *Pix) {
 	m.arr[v.y*m.w+v.x] = *v
 }
 
+// Given an index return its x and y coordinates
+// func (m *PixMatrix) resolveIndex(i int) (int, int) {
+
+// }
+
 func (m *PixMatrix) center() (int, int) {
 	return m.w / 2, m.h / 2
 }

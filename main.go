@@ -28,11 +28,11 @@ var (
 
 	// Debugging Settings
 	DEBUG_DRAW_CHUNKS = false
-	DEBUG_SAVE_LINES  = false
+	DEBUG_SAVE_LINES  = true
 	DEBUG_DARKEN      = true
 
 	DEBUG_WINDOW   = false
-	DEBUG_RUN_ONCE = false
+	DEBUG_RUN_ONCE = true
 
 	DEBUG_STATIC        = false
 	DEBUG_SOURCE_STATIC = "cap.png"
@@ -112,7 +112,7 @@ func start() {
 		}
 
 		if DEBUG_SAVE_LINES {
-			save(i, "huntress.png")
+			save(i, "huntmat.png")
 		}
 
 		if !running || DEBUG_RUN_ONCE || DEBUG_SAVE_LINES {

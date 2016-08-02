@@ -90,6 +90,8 @@ func convertToColorful(c color.Color) colorful.Color {
 	return colorful.Color{float64(r) / 65535.0, float64(g) / 65535.0, float64(b) / 65535.0}
 }
 
+// var limiter = 0
+
 func colorDistance(a, b *Pix) float64 {
 	// a.initLuv()
 	// b.initLuv()
@@ -105,7 +107,17 @@ func colorDistance(a, b *Pix) float64 {
 		a.initLuv()
 		b.initLuv()
 
-		return math.Sqrt(sq(a.r-b.r) + sq(a.g-b.g) + sq(a.b-b.b))
+		d := math.Sqrt(sq(a.r-b.r) + sq(a.g-b.g) + sq(a.b-b.b))
+
+		// fmt.Printf("(%d %d) %0.3f\n", a.x, a.y, d)
+
+		// limiter += 1
+
+		// if limiter > 100 {
+		// 	os.Exit(0)
+		// }
+
+		return d
 	}
 }
 

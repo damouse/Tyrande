@@ -82,7 +82,6 @@ func moveTo(t Vec) {
 		// fmt.Printf("Mult: %0.3f\tProg: %0.f,%0.f\tRemaining: %0.f,%0.f\tUpdate: %0.f,%0.f\tDist: %0.f\n", mult, px, py, rx, ry, ux, uy, dist)
 
 		if dist == 0 {
-			fmt.Println("Soft breat")
 			break
 		}
 
@@ -92,26 +91,6 @@ func moveTo(t Vec) {
 		time.Sleep(OUT_TIME)
 	}
 
-	// Mostly works
-	// for i := 0.0; i <= OUT_CYCLES; i++ {
-	// 	// Where do we expect to be this cycle
-	// 	ex, ey := i*dx, i*dy
-	// 	// ex, ey := tx-px, ty-py
-
-	// 	// Update to x, y
-	// 	ux, uy := ex-px, ey-py
-
-	// 	// Update our progress
-	// 	px, py = px+float64(int(ux)), py+float64(int(uy))
-
-	// 	dist = euclideanDistanceFloat(px, py, tx, ty)
-	// 	fmt.Printf("Prog: %0.f,%0.f\tDist: %0.f\n", px, py, dist)
-	// 	moveRelative(int(ux), int(uy))
-
-	// 	time.Sleep(OUT_TIME)
-	// }
-
 	fmt.Println("Tracking completed")
-
 	tracking = false
 }
