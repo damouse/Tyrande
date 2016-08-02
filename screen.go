@@ -17,11 +17,19 @@ func capture() *PixMatrix {
 	if DEBUG_STATIC {
 		p = imageStatic
 	} else if targeting {
-		p = CaptureLeftNarrow(0.3, 0.3)
+		if DEBUG_CAP_MAT {
+			return CaptureLeftNarrowMat(0.3, 0.3)
+		} else {
+			p = CaptureLeftNarrow(0.3, 0.3)
+		}
 	} else {
 		// Testing direct mat
-		return CaptureMat(LEFT_SCREEN_DIM)
-		// p = CaptureLeft()
+		if DEBUG_CAP_MAT {
+			return CaptureMat(LEFT_SCREEN_DIM)
+		} else {
+			p = CaptureLeft()
+		}
+
 	}
 
 	return convertImage(p)
@@ -73,6 +81,23 @@ func CaptureLeftNarrow(fracX, fracY float64) image.Image {
 
 	i, _ := CaptureRect(newRect)
 	return i
+}
+
+func CaptureLeftNarrowMat(fracX, fracY float64) *PixMatrix {
+	dx := LEFT_SCREEN_DIM.Max.X - LEFT_SCREEN_DIM.Min.X
+	dy := LEFT_SCREEN_DIM.Max.Y - LEFT_SCREEN_DIM.Min.Y
+
+	offx := int(float64(dx) * fracX * 0.5)
+	offy := int(float64(dy) * fracY * 0.5)
+
+	newRect := image.Rect(
+		LEFT_SCREEN_DIM.Min.X+offx,
+		LEFT_SCREEN_DIM.Min.Y+offy,
+		LEFT_SCREEN_DIM.Max.X-offx,
+		LEFT_SCREEN_DIM.Max.Y-offy,
+	)
+
+	return CaptureMat(newRect)
 }
 
 func CaptureRect(rect image.Rectangle) (image.Image, error) {

@@ -18,9 +18,9 @@ var (
 
 	OUT_TIME   = 1 * time.Millisecond // how long output should wait between cycles
 	OUT_CYCLES = 20.0                 // how many update cycles to perform
-	CACHE_LUV  = false
+	CACHE_LUV  = true
 
-	LOG_BENCH = false
+	LOG_BENCH = true
 	LOG       = true
 
 	LEFT_SCREEN_DIM = image.Rect(0, 32, 2180, 1380)
@@ -28,11 +28,12 @@ var (
 
 	// Debugging Settings
 	DEBUG_DRAW_CHUNKS = false
-	DEBUG_SAVE_LINES  = true
+	DEBUG_SAVE_LINES  = false
 	DEBUG_DARKEN      = true
+	DEBUG_CAP_MAT     = true
 
 	DEBUG_WINDOW   = false
-	DEBUG_RUN_ONCE = true
+	DEBUG_RUN_ONCE = false
 
 	DEBUG_STATIC        = false
 	DEBUG_SOURCE_STATIC = "cap.png"
