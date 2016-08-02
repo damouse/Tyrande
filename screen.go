@@ -203,17 +203,11 @@ func CaptureMat(rect image.Rectangle) *PixMatrix {
 	hdrp.Cap = x * y * 4
 
 	imageBytes := make([]byte, len(slice))
-
 	ret := NewPixMatrix(x, y)
-	// Switching this to a matrix will save some time, but not a whole lot
 
-	//(x, y) starts at Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*4].
-	// i = (y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*4
-	// i = y * Stride + x * 4
-
+	// Just return the byte array and access it as needed, dont make all the colors n shit
 	for i := 0; i < len(imageBytes); i += 4 {
 		pixIndex := i / 4
-		// imageBytes[i], imageBytes[i+2], imageBytes[i+1], imageBytes[i+3] = slice[i+2], slice[i], slice[i+1], slice[i+3]
 		p := &ret.arr[pixIndex]
 		p.Color = color.NRGBA{uint8(slice[i+2]), uint8(slice[i+1]), uint8(slice[i]), 255}
 
@@ -221,6 +215,5 @@ func CaptureMat(rect image.Rectangle) *PixMatrix {
 		p.y = pixIndex / ret.w
 	}
 
-	// img := &image.NRGBA{imageBytes, 4 * x, image.Rect(0, 0, x, y)}
 	return ret
 }
