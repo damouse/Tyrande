@@ -26,12 +26,6 @@ func NewWindow() *Window {
 	}
 }
 
-func (w *Window) queueShow(op *Cycle) {
-	if !w.working {
-		go w.show(op.mat.toImage())
-	}
-}
-
 func (w *Window) show(i image.Image) {
 	w.working = true
 

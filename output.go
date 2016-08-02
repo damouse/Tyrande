@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"math"
 	"time"
 
 	"github.com/AllenDang/w32"
@@ -10,32 +12,9 @@ import (
 // https://godoc.org/github.com/lxn/win
 // https://play.golang.org/p/kwfYDhhiqk
 
+// Listens for output commands or makes progress on the last output command
 func output() {
-
-	// movement := <-outputChan
-
-}
-
-type Vec struct {
-	x, y int
-}
-
-// Moves to the given coordinates
-func moveTo(t Vec) {
-	dx := -t.x
-	dy := -t.y
-
-	// milliseconds?
-	// duration := 1000
-	cycles := 30
-
-	lx := float64(dx) / float64(cycles)
-	ly := float64(dy) / float64(cycles)
-
-	for i := 0; i < cycles; i++ {
-		moveRelative(int(lx), int(ly))
-		time.Sleep(1 * time.Millisecond)
-	}
+	// out := <-outputChan
 }
 
 func moveNow(t Vec) {
@@ -63,38 +42,72 @@ func moveRelative(x, y int) {
 	w32.SendInput(inputs)
 }
 
-// func windowsAPI() {
-// 	time.Sleep(1000 * time.Millisecond)
+// Moves to the given coordinates
+func moveTo(t Vec) {
+	if tracking {
+		return
+	}
 
-// 	for i := 0; i < 100; i++ {
-// 		p := win.POINT{}
-// 		win.GetCursorPos(&p)
-// 		// fmt.Printf("Current position: %v\n", p)
+	tracking = true
 
-// 		// Attempt 2 in Go
+	// Progress towards the destination
+	px, py := 0.0, 0.0
+	// pDist := 0.0
 
-// 		// win.SetCursorPos(p.X+1, p.Y+1)
-// 		time.Sleep(10 * time.Millisecond)
-// 	}
+	// target x,y
+	tx, ty := -float64(t.x), -float64(t.y)
 
-// 	// p := win.POINT{}
-// 	// win.GetCursorPos(&p)
-// 	// fmt.Printf("Current position: %v\n", p)
-// }
+	// How much to update each cycle
+	lx, ly := math.Ceil(tx/OUT_CYCLES), math.Ceil(ty/OUT_CYCLES)
 
-/*
-Tyrande
-	Main event loop
+	// The distance we're going to travel
+	dist := euclideanDistanceFloat(0.0, 0.0, tx, ty)
 
-Vision
-	Outline input loop. Reads the screen, calls Tyrande with Lines
+	closeEnough := math.Ceil(euclideanDistanceFloat(0.0, 0.0, lx, ly))
 
-Model
-	Tracks Chars in an abstract way
+	// fmt.Printf("Target: %.0f closeenough %0.f", dist, closeEnough)
 
-Input
-	Handles input-over-time to system
+	// for i := 0.0; i < OUT_CYCLES; i++ {
+	for {
+		moveRelative(int(lx), int(ly))
 
-Output
-	Watches input, subtracts our input, determines what user is doing
-*/
+		px += lx
+		py += ly
+
+		dist = euclideanDistanceFloat(0.0, 0.0, px, py)
+
+		fmt.Printf("Update: %d, %d Dist: %.0f Target: %0.f\n", int(lx), int(ly), dist, closeEnough)
+
+		if dist <= closeEnough {
+			fmt.Printf("Remaining: %0.f, %0.f\n", tx-px, ty-py)
+			break
+		}
+
+		time.Sleep(OUT_TIME)
+	}
+
+	// dist := euclideanDistanceFloat(0.0, 0.0, tx, ty)
+	// closeEnough := math.Ceil(euclideanDistanceFloat(0.0, 0.0, lx, ly))
+
+	// fmt.Printf("Dist: %f Close enough: %f delta: %d %d\n", dist, closeEnough, lx, ly)
+
+	// for {
+	// 	moveRelative(lx, ly)
+
+	// 	px += lx
+	// 	py += ly
+
+	// 	// Update the progress and see how close we are
+	// 	dist = euclideanDistanceFloat(px, py, tx, ty)
+
+	// 	// moveRelative(lx, ly)
+
+	// 	if dist <= closeEnough {
+	// 		break
+	// 	}
+	// }
+
+	fmt.Println("Tracking completed")
+
+	tracking = false
+}

@@ -22,6 +22,10 @@ const (
 	PIX_VISITED
 )
 
+type Vec struct {
+	x, y int
+}
+
 type Pix struct {
 	color.Color
 

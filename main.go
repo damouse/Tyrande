@@ -12,14 +12,15 @@ import (
 
 var (
 	// Settings
-	COLOR_THRESHOLD = 0.3
+	COLOR_THRESHOLD = 0.25
 	LINE_WIDTH      = 1
 	SWATCH          []*Pix
 
-	POLL_TIME = 100 * time.Millisecond
-	CACHE_LUV = false
+	OUT_TIME   = 1 * time.Millisecond // how long output should wait between cycles
+	OUT_CYCLES = 3.0                  // how many update cycles to perform
+	CACHE_LUV  = false
 
-	LOG_BENCH = true
+	LOG_BENCH = false
 	LOG       = true
 
 	LEFT_SCREEN_DIM = image.Rect(0, 32, 2180, 1380)
@@ -27,13 +28,13 @@ var (
 
 	// Debugging Settings
 	DEBUG_DRAW_CHUNKS = false
-	DEBUG_SAVE_LINES  = true
+	DEBUG_SAVE_LINES  = false
 	DEBUG_DARKEN      = true
 
 	DEBUG_WINDOW   = false
 	DEBUG_RUN_ONCE = false
 
-	DEBUG_STATIC        = true
+	DEBUG_STATIC        = false
 	DEBUG_SOURCE_STATIC = "cap.png"
 
 	window      *Window
@@ -42,10 +43,10 @@ var (
 	// Utility Globals
 	luvCacheList = make([]colorful.Color, 16777216)
 
-	sumVisions, sumModles, totalCycles float64
+	totalCycleTime, totalCycles float64
 
 	// Main Logic globals
-	running, targeting              bool
+	running, targeting, tracking    bool
 	centerVec, targetVec, outputVec Vec
 
 	closingChan = make(chan bool, 0)
@@ -55,8 +56,6 @@ var (
 )
 
 func hunt() *image.NRGBA {
-	start := time.Now()
-
 	// Capture
 	mat := capture()
 
@@ -78,16 +77,11 @@ func hunt() *image.NRGBA {
 
 	// Track to the closest char
 	if targeting && len(chars) != 0 {
-		target := chars[0]
-
-		outputVec = target.offset
-		moveNow(outputVec)
+		go fuckingMoveTo(chars[0].offset)
+		// target := chars[0]
+		// outputVec = target.offset
+		// moveNow(outputVec)
 	}
-
-	// fmt.Printf("Cycle: %s\n", time.Since(start))
-
-	sumVisions += time.Since(start).Seconds() * 1000
-	totalCycles += 1
 
 	if DEBUG_SAVE_LINES || DEBUG_WINDOW {
 		return draw(mat, lines, chars)
@@ -98,12 +92,23 @@ func hunt() *image.NRGBA {
 
 func start() {
 	fmt.Println("TYR Starting")
+
+	var start time.Time
+	var i *image.NRGBA
 	running = true
 
 	go startRoutine(input)
 
 	for {
-		i := hunt()
+		start = time.Now()
+		i = hunt()
+
+		if LOG_BENCH {
+			fmt.Printf("Cycle: %s\n", time.Since(start))
+		}
+
+		totalCycleTime += time.Since(start).Seconds() * 1000
+		totalCycles += 1
 
 		if DEBUG_WINDOW {
 			go window.show(i)
@@ -114,13 +119,12 @@ func start() {
 		}
 
 		if !running || DEBUG_RUN_ONCE || DEBUG_SAVE_LINES {
-			fmt.Println("Linear stopping")
 			break
 		}
 	}
 
-	// Do a little bit of benching
-	vis := sumVisions / totalCycles
+	// Print out benchmarking information
+	vis := totalCycleTime / totalCycles
 	fmt.Printf("Cycles: \t%1.0f\nAvg cycle: \t%1.0f ms\n", totalCycles, vis)
 }
 
