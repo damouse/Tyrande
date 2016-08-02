@@ -50,61 +50,65 @@ func moveTo(t Vec) {
 
 	tracking = true
 
-	// Progress towards the destination
+	// Progress towards the destination. Updated with the contents of each cycle
 	px, py := 0.0, 0.0
-	// pDist := 0.0
 
-	// target x,y
+	// Target coordinates
 	tx, ty := -float64(t.x), -float64(t.y)
-
-	// How much to update each cycle
-	lx, ly := math.Ceil(tx/OUT_CYCLES), math.Ceil(ty/OUT_CYCLES)
 
 	// The distance we're going to travel
 	dist := euclideanDistanceFloat(0.0, 0.0, tx, ty)
 
-	closeEnough := math.Ceil(euclideanDistanceFloat(0.0, 0.0, lx, ly))
+	fmt.Printf("Target: %.0f %0.f\n", tx, ty)
 
-	// fmt.Printf("Target: %.0f closeenough %0.f", dist, closeEnough)
+	count := 0.0
 
-	// for i := 0.0; i < OUT_CYCLES; i++ {
 	for {
-		moveRelative(int(lx), int(ly))
+		// remaining distance in x and y
+		rx, ry := tx-px, ty-py
 
-		px += lx
-		py += ly
+		// Divide up the remaining space based on the number of cycles we've run
+		mult := 1 / (OUT_CYCLES - count)
 
-		dist = euclideanDistanceFloat(0.0, 0.0, px, py)
+		// Multimple cycle fraction by remaining distance and get update
+		ux, uy := math.Ceil(mult*rx), math.Ceil(mult*ry)
 
-		fmt.Printf("Update: %d, %d Dist: %.0f Target: %0.f\n", int(lx), int(ly), dist, closeEnough)
+		px, py = px+ux, py+uy
 
-		if dist <= closeEnough {
-			fmt.Printf("Remaining: %0.f, %0.f\n", tx-px, ty-py)
+		moveRelative(int(ux), int(uy))
+
+		dist = euclideanDistanceFloat(px, py, tx, ty)
+
+		// fmt.Printf("Mult: %0.3f\tProg: %0.f,%0.f\tRemaining: %0.f,%0.f\tUpdate: %0.f,%0.f\tDist: %0.f\n", mult, px, py, rx, ry, ux, uy, dist)
+
+		if dist == 0 {
+			fmt.Println("Soft breat")
 			break
 		}
+
+		dist = euclideanDistanceFloat(px, py, tx, ty)
+		count += 1
 
 		time.Sleep(OUT_TIME)
 	}
 
-	// dist := euclideanDistanceFloat(0.0, 0.0, tx, ty)
-	// closeEnough := math.Ceil(euclideanDistanceFloat(0.0, 0.0, lx, ly))
+	// Mostly works
+	// for i := 0.0; i <= OUT_CYCLES; i++ {
+	// 	// Where do we expect to be this cycle
+	// 	ex, ey := i*dx, i*dy
+	// 	// ex, ey := tx-px, ty-py
 
-	// fmt.Printf("Dist: %f Close enough: %f delta: %d %d\n", dist, closeEnough, lx, ly)
+	// 	// Update to x, y
+	// 	ux, uy := ex-px, ey-py
 
-	// for {
-	// 	moveRelative(lx, ly)
+	// 	// Update our progress
+	// 	px, py = px+float64(int(ux)), py+float64(int(uy))
 
-	// 	px += lx
-	// 	py += ly
-
-	// 	// Update the progress and see how close we are
 	// 	dist = euclideanDistanceFloat(px, py, tx, ty)
+	// 	fmt.Printf("Prog: %0.f,%0.f\tDist: %0.f\n", px, py, dist)
+	// 	moveRelative(int(ux), int(uy))
 
-	// 	// moveRelative(lx, ly)
-
-	// 	if dist <= closeEnough {
-	// 		break
-	// 	}
+	// 	time.Sleep(OUT_TIME)
 	// }
 
 	fmt.Println("Tracking completed")

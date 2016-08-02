@@ -17,7 +17,7 @@ var (
 	SWATCH          []*Pix
 
 	OUT_TIME   = 1 * time.Millisecond // how long output should wait between cycles
-	OUT_CYCLES = 3.0                  // how many update cycles to perform
+	OUT_CYCLES = 20.0                 // how many update cycles to perform
 	CACHE_LUV  = false
 
 	LOG_BENCH = false
@@ -77,10 +77,7 @@ func hunt() *image.NRGBA {
 
 	// Track to the closest char
 	if targeting && len(chars) != 0 {
-		go fuckingMoveTo(chars[0].offset)
-		// target := chars[0]
-		// outputVec = target.offset
-		// moveNow(outputVec)
+		moveTo(chars[0].offset)
 	}
 
 	if DEBUG_SAVE_LINES || DEBUG_WINDOW {
