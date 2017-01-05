@@ -1,6 +1,8 @@
 Hypothetically, if someone made a video game that outlined enemies in a specific color, you could write a bot that scraped the screen in real time instead of looking at memory. 
 
-This is an academic proof of concept. Dont use this live. 
+This is an academic proof of concept. Matching the performance of a memory scraping bot is very hard; this wasn't my intention. I did this to see if I could. 
+
+At last update the bot can handle reading the screen with high precision. It tracks the nearest centerpoint for an enemy when the "aim" button is pressed, but has some problems with aiming displacement. 
 
 ## Running
 
