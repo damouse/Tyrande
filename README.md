@@ -1,12 +1,16 @@
-Hypothetically, if someone made a video game that outlined enemies in a specific color, you could write a bot that scraped the screen in real time instead of looking at memory. 
+Hypothetically, if someone made a video game that outlined enemies in a specific color, you could write a bot that scraped the screen in real time instead of looking at memory. I wonder if any games do that?
 
-This is an academic proof of concept. Matching the performance of a memory scraping bot is very hard; this wasn't my intention. I did this to see if I could. 
+This is an academic proof of concept, it is not meant for real use by anyone. Matching the performance of a memory scraping bot with a CV one is one hell of an uphill battle. The purpose of this project is to see how well I could do, not to create a tool for cheaters.
 
 At last update the bot can handle reading the screen with high precision. It tracks the nearest centerpoint for an enemy when the "aim" button is pressed, but has some problems with aiming displacement. 
 
+All that said, you're not going to find specific instructions on setting this project up here. I'm sticking to my "I didnt mean harm" argument above, but I've also seen a handful of cease-and-desist letters sent on similar projects. 
+
 ## Running
 
+```
 go build && ./tyrande.exe
+```
 
 ## OpenCV 
 
